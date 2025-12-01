@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mkdocs-pyswiftkit-plugin"
+version = "0.1.0"
+description = "MkDocs plugin for PySwiftKit Swift->Python API generator"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.7.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["mkdocs_plugin*"]
+
+[project.entry-points."mkdocs.plugins"]
+pyswiftkit_demo = "mkdocs_plugin:PySwiftKitPlugin"

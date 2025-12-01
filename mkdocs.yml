@@ -1,0 +1,18 @@
+site_name: PySwiftKit Demo
+site_description: Swift to Python API Generator Demo
+
+theme:
+  name: readthedocs
+
+plugins:
+  - search
+  - pyswiftkit_demo:
+      wasm_path: demo
+
+markdown_extensions:
+  - admonition
+  - codehilite
+
+nav:
+  - Home: index.md
+  - Demo: demo.md
