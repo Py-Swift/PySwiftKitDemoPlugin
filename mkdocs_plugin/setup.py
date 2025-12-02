@@ -15,7 +15,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'mkdocs.plugins': [
-            'pyswiftkit_demo = pyswiftkit_demo:PySwiftKitDemoPlugin',
+            'pyswiftkit_demo = mkdocs_plugin:PySwiftKitDemoPlugin',
         ]
     },
     classifiers=[

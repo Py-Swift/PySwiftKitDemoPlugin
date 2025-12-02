@@ -5,14 +5,11 @@ import JavaScriptKit
 @main
 struct PySwiftKitDemoApp {
     static func main() {
-        print("PySwiftKit Demo - Starting")
         // Setup editors immediately
         setupEditors()
     }
     
     static func setupEditors() {
-        print("Setting up editors...")
-        
         // Default Swift code with PySwiftKit decorators
         let defaultSwiftCode = """
 import PySwiftKit
@@ -69,19 +66,14 @@ class Person {
             language: "python",
             readOnly: true
         ) else {
-            print("Failed to create right editor")
             return
         }
-        
-        print("Both editors created")
         
         // Setup completion providers for PySwiftKit decorators
         CompletionProvider.setupCompletionProviders(swiftEditor: leftEditor)
         
         // Set up text change callback
         leftEditor.onDidChangeContent { newContent in
-            print("Content changed")
-            
             // Stage 1: Simple stub generation
             let pythonOutput = generatePythonStub(from: newContent)
             rightEditor.setValue(pythonOutput)
@@ -90,8 +82,6 @@ class Person {
         // Generate initial Python output
         let initialPython = generatePythonStub(from: defaultSwiftCode)
         rightEditor.setValue(initialPython)
-        
-        print("Setup complete!")
     }
     
     /// Stage 2: Parse Swift code and generate Python using PySwiftAST + SwiftSyntax

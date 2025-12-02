@@ -8,8 +8,6 @@ enum SwiftToPythonGenerator {
     
     /// Generate Python stub code from Swift source
     static func generatePythonStub(from swiftCode: String) -> String {
-        print("Parsing Swift code with SwiftSyntax...")
-        
         do {
             // Parse Swift code using SwiftSyntax (like PyFileGenerator)
             let sourceFile = Parser.parse(source: swiftCode)
@@ -415,11 +413,27 @@ enum SwiftToPythonGenerator {
     }
     
     /// Convert Swift TypeSyntax to Python Expression
+    /// Based on PySwiftKit TYPE_CONVERSIONS.md comprehensive reference
     private static func swiftTypeToExpression(_ type: TypeSyntax) -> Expression {
         // Handle identifier types (String, Int, etc.)
         if let identType = type.as(IdentifierTypeSyntax.self) {
             let typeName = identType.name.text
             let pythonType = swiftTypeToPython(typeName)
+            
+            // Handle Optional<Type> generic syntax (treat same as Type?)
+            if typeName == "Optional", let genericArgs = identType.genericArgumentClause {
+                if genericArgs.arguments.count == 1,
+                   case let .type(wrappedType) = genericArgs.arguments.first!.argument {
+                    // Return wrapped_type | None
+                    return buildOptionalExpression(swiftTypeToExpression(wrappedType))
+                }
+            }
+            
+            // Handle generic arguments (Array<Element>, Set<Element>, Dictionary<Key, Value>)
+            if let genericArgs = identType.genericArgumentClause {
+                return buildGenericTypeExpression(typeName, genericArgs: genericArgs.arguments)
+            }
+            
             return .name(Name(
                 id: pythonType,
                 ctx: .load,
@@ -430,18 +444,90 @@ enum SwiftToPythonGenerator {
             ))
         }
         
-        // Handle optional types (String? -> Optional[str])
+        // Handle optional types (String? -> str | None)
         if let optType = type.as(OptionalTypeSyntax.self) {
             let wrapped = swiftTypeToExpression(optType.wrappedType)
-            // Return just the wrapped type for simplicity
-            return wrapped
+            return buildOptionalExpression(wrapped)
         }
         
         // Handle array types ([String] -> list[str])
-        if type.as(ArrayTypeSyntax.self) != nil {
-            // For now, just return "list"
-            return .name(Name(
-                id: "list",
+        if let arrayType = type.as(ArrayTypeSyntax.self) {
+            let elementType = swiftTypeToExpression(arrayType.element)
+            
+            // Create list[element_type] subscript expression
+            return .subscriptExpr(Subscript(
+                value: .name(Name(
+                    id: "list",
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
+                slice: elementType,
+                ctx: .load,
+                lineno: 0,
+                colOffset: 0,
+                endLineno: nil,
+                endColOffset: nil
+            ))
+        }
+        
+        // Handle dictionary types ([String: Int] -> dict[str, int])
+        if let dictType = type.as(DictionaryTypeSyntax.self) {
+            let keyType = swiftTypeToExpression(dictType.key)
+            let valueType = swiftTypeToExpression(dictType.value)
+            
+            // Create dict[key_type, value_type] subscript expression
+            let tupleElts = [keyType, valueType]
+            return .subscriptExpr(Subscript(
+                value: .name(Name(
+                    id: "dict",
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
+                slice: .tuple(Tuple(
+                    elts: tupleElts,
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
+                ctx: .load,
+                lineno: 0,
+                colOffset: 0,
+                endLineno: nil,
+                endColOffset: nil
+            ))
+        }
+        
+        // Handle tuple types ((Int, String) -> tuple[int, str])
+        if let tupleType = type.as(TupleTypeSyntax.self) {
+            let elementTypes = tupleType.elements.map { element in
+                swiftTypeToExpression(element.type)
+            }
+            
+            return .subscriptExpr(Subscript(
+                value: .name(Name(
+                    id: "tuple",
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
+                slice: .tuple(Tuple(
+                    elts: elementTypes,
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
                 ctx: .load,
                 lineno: 0,
                 colOffset: 0,
@@ -461,15 +547,171 @@ enum SwiftToPythonGenerator {
         ))
     }
     
+    /// Build optional type expression (Type -> Optional[Type])
+    /// Using typing.Optional for cleaner output without parentheses
+    private static func buildOptionalExpression(_ wrappedType: Expression) -> Expression {
+        // Use Optional[Type] from typing module for clean output
+        return .subscriptExpr(Subscript(
+            value: .name(Name(
+                id: "Optional",
+                ctx: .load,
+                lineno: 0,
+                colOffset: 0,
+                endLineno: nil,
+                endColOffset: nil
+            )),
+            slice: wrappedType,
+            ctx: .load,
+            lineno: 0,
+            colOffset: 0,
+            endLineno: nil,
+            endColOffset: nil
+        ))
+    }
+    
+    /// Build generic type expression (Array<T> -> list[T], Set<T> -> set[T], Dictionary<K,V> -> dict[K,V])
+    private static func buildGenericTypeExpression(_ typeName: String, genericArgs: GenericArgumentListSyntax) -> Expression {
+        let pythonBaseType = swiftTypeToPython(typeName)
+        
+        // Convert generic arguments to Python type expressions
+        let argExpressions = genericArgs.map { arg in
+            // arg.argument is GenericArgumentSyntax.Argument which is TypeSyntax
+            if case let .type(typeSyntax) = arg.argument {
+                return swiftTypeToExpression(typeSyntax)
+            }
+            // Fallback to object
+            return .name(Name(
+                id: "object",
+                ctx: .load,
+                lineno: 0,
+                colOffset: 0,
+                endLineno: nil,
+                endColOffset: nil
+            ))
+        }
+        
+        // Single generic argument (Array, Set)
+        if argExpressions.count == 1 {
+            return .subscriptExpr(Subscript(
+                value: .name(Name(
+                    id: pythonBaseType,
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
+                slice: argExpressions[0],
+                ctx: .load,
+                lineno: 0,
+                colOffset: 0,
+                endLineno: nil,
+                endColOffset: nil
+            ))
+        }
+        
+        // Multiple generic arguments (Dictionary<K, V>)
+        if argExpressions.count > 1 {
+            return .subscriptExpr(Subscript(
+                value: .name(Name(
+                    id: pythonBaseType,
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
+                slice: .tuple(Tuple(
+                    elts: argExpressions,
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
+                ctx: .load,
+                lineno: 0,
+                colOffset: 0,
+                endLineno: nil,
+                endColOffset: nil
+            ))
+        }
+        
+        // Fallback: just return the base type
+        return .name(Name(
+            id: pythonBaseType,
+            ctx: .load,
+            lineno: 0,
+            colOffset: 0,
+            endLineno: nil,
+            endColOffset: nil
+        ))
+    }
+    
     /// Map Swift type names to Python type names
+    /// Based on PySwiftKit TYPE_CONVERSIONS.md comprehensive reference
     private static func swiftTypeToPython(_ swiftType: String) -> String {
         switch swiftType {
-        case "String": return "str"
-        case "Int", "Int32", "Int64", "UInt", "UInt32", "UInt64": return "int"
-        case "Float", "Double": return "float"
-        case "Bool": return "bool"
-        case "Void": return "None"
-        default: return "object"
+        // String types → str
+        case "String", "Substring":
+            return "str"
+        
+        // Signed integers → int
+        case "Int", "Int64", "Int32", "Int16", "Int8":
+            return "int"
+        
+        // Unsigned integers → int
+        case "UInt", "UInt64", "UInt32", "UInt16", "UInt8":
+            return "int"
+        
+        // Floating point → float
+        case "Double", "Float", "Float32", "Float16", "CGFloat":
+            return "float"
+        
+        // Boolean → bool
+        case "Bool":
+            return "bool"
+        
+        // Binary data → bytes
+        case "Data":
+            return "bytes"
+        
+        // Date/Time → datetime.datetime
+        case "Date":
+            return "datetime.datetime"
+        
+        case "DateComponents":
+            return "datetime.datetime"
+        
+        // URL → str
+        case "URL":
+            return "str"
+        
+        // Collections
+        case "Array":
+            return "list"
+        
+        case "Set":
+            return "set"
+        
+        case "Dictionary":
+            return "dict"
+        
+        // Range types → range
+        case "Range", "ClosedRange":
+            return "range"
+        
+        // Void/None
+        case "Void", "()":
+            return "None"
+        
+        // PyPointer (raw Python object)
+        case "PyPointer":
+            return "object"
+        
+        // Default to object for unknown types
+        default:
+            return "object"
         }
     }
     

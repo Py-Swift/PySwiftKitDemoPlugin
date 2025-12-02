@@ -93,7 +93,6 @@ Try editing the Swift code on the left to see the generated Python API on the ri
     });
     
     require(['vs/editor/editor.main'], async function() {
-        console.log('Monaco Editor loaded');
         updateStatus('Monaco Editor loaded, initializing Swift WASM...');
         
         // Make monaco globally accessible before Swift initializes
@@ -107,10 +106,8 @@ Try editing the Swift code on the left to see the generated Python API on the ri
             const basePath = window.location.pathname.includes('/demo') ? '../demo/' : './demo/';
             const { init } = await import(basePath + 'index.js');
             
-            console.log('Swift WASM module loaded, calling init...');
             const swift = await init();
             
-            console.log('Swift WASM initialized successfully!');
             updateStatus('✅ Swift WASM Ready! Try editing the code on the left.');
             
         } catch (error) {

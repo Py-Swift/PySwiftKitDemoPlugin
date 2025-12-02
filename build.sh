@@ -3,22 +3,56 @@ set -e
 
 echo "Building PySwiftKit Demo Plugin for WASM..."
 
+# Use absolute path to Swift 6.2.1 to bypass venv PATH issues
+SWIFT_BIN="$HOME/.swiftly/bin/swift"
+
 # Configuration
 BUILD_DIR=".build/plugins/PackageToJS/outputs/Package"
 DEMO_DIR="demo"
 
 echo "Using Swift 6.2.1 with WASM SDK..."
-swift --version
+$SWIFT_BIN --version
 
 # Build using JavaScriptKit plugin
 echo "Building Swift package for WASM target..."
-swift package -c release --swift-sdk swift-6.2.1-RELEASE_wasm js --use-cdn --product PySwiftKitDemo
+$SWIFT_BIN package -c release --swift-sdk swift-6.2.1-RELEASE_wasm js --use-cdn --product PySwiftKitDemo
 # Create demo directory if it doesn't exist
 mkdir -p "$DEMO_DIR"
 
 # Copy generated files to demo directory
 echo "Copying build artifacts to demo directory..."
 cp -r "$BUILD_DIR"/* "$DEMO_DIR/"
+
+# Also copy the custom PySwiftKitDemo.js loader if it exists
+if [ -f "build/PySwiftKitDemo.js" ]; then
+    echo "Copying custom JS loader..."
+    cp build/PySwiftKitDemo.js "$DEMO_DIR/"
+fi
+
+# Compress WASM with Brotli and remove uncompressed version
+echo "Compressing WASM with Brotli..."
+if command -v brotli &> /dev/null; then
+    # Get original size before compression
+    original_size=$(stat -f%z "$DEMO_DIR/PySwiftKitDemo.wasm")
+    
+    # Compress
+    brotli -9 -f "$DEMO_DIR/PySwiftKitDemo.wasm" -o "$DEMO_DIR/PySwiftKitDemo.wasm.br"
+    
+    # Remove uncompressed version to force proper .br serving
+    rm "$DEMO_DIR/PySwiftKitDemo.wasm"
+    
+    # Show compression stats
+    compressed_size=$(stat -f%z "$DEMO_DIR/PySwiftKitDemo.wasm.br")
+    compression_ratio=$(echo "scale=1; 100 - ($compressed_size * 100 / $original_size)" | bc)
+    
+    echo "   Original:   $(numfmt --to=iec-i --suffix=B $original_size 2>/dev/null || echo "$(($original_size / 1024 / 1024))MB")"
+    echo "   Compressed: $(numfmt --to=iec-i --suffix=B $compressed_size 2>/dev/null || echo "$(($compressed_size / 1024 / 1024))MB")"
+    echo "   Saved:      ${compression_ratio}%"
+    echo "   ✅ Only .wasm.br deployed - mkdocs plugin will serve it"
+else
+    echo "   ⚠️  Brotli not found. Install with: brew install brotli"
+    echo "   Keeping uncompressed WASM..."
+fi
 
 # Create index.html in demo directory
 echo "Generating index.html..."
@@ -172,8 +206,6 @@ cat > "$DEMO_DIR/index.html" << 'EOF'
         });
         
         require(['vs/editor/editor.main'], async function() {
-            console.log('Monaco Editor loaded');
-            
             // Make monaco globally accessible before Swift initializes
             window.monaco = monaco;
             
@@ -185,7 +217,6 @@ cat > "$DEMO_DIR/index.html" << 'EOF'
             try {
                 // Initialize Swift WASM - this will call setupEditors() via @main
                 const swift = await init();
-                console.log('Swift WASM initialized successfully!');
                 showStatus('Swift WASM Ready!');
                 
             } catch (error) {
@@ -201,8 +232,15 @@ EOF
 echo ""
 echo "✅ Build complete!"
 echo "   Output directory: $DEMO_DIR/"
-echo "   WASM size: $(du -h "$DEMO_DIR/PySwiftKitDemo.wasm" | cut -f1)"
+
+# Show appropriate file size based on what exists
+if [ -f "$DEMO_DIR/PySwiftKitDemo.wasm.br" ]; then
+    echo "   WASM size: $(du -h "$DEMO_DIR/PySwiftKitDemo.wasm.br" | cut -f1) (Brotli compressed)"
+elif [ -f "$DEMO_DIR/PySwiftKitDemo.wasm" ]; then
+    echo "   WASM size: $(du -h "$DEMO_DIR/PySwiftKitDemo.wasm" | cut -f1) (uncompressed)"
+fi
+
 echo ""
 echo "To test locally, run:"
-echo "   cd demo && python3 -m http.server 8000"
-echo "   Then open: http://localhost:8000/index.html"
+echo "   uv run mkdocs serve"
+echo "   Then open: http://localhost:8000/"
