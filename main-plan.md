@@ -53,11 +53,20 @@ https://github.com/Py-Swift/PySwiftKit/blob/master/README.md
 # Stage 2
 
 * implement PySwiftAst/PyCodeGenerator
-* implement PySwiftIDE / MonacoAPI
-* js closures for monaco completion providers ect.
 
 # Stage 3
 
 * create the part where same thing from PyFileGenerator, is generating python code based on the PySwiftKit decorators
+* working as mkdoc plugin and mkdoc page displaying it
+* in PyFileGenerator i handled @PyProperty so it detects if example if let , then getter only, normal var is get/set, same if computed property and it has a set {}, but if only a get {} then it should be getter only
 
 # Stage 4
+
+* js closures for monaco completion providers ect.
+* provide completion handlers for @PyClass, @PyMethod, @PyProperty, @PyModule, @PyFunction macroes
+* is it possible to add some kind of swift lsp also ?
+
+
+# Stage 5
+
+* implement PySwiftIDE / MonacoAPI

@@ -19,16 +19,26 @@ import PySwiftKit
 
 @PyClass
 class Person {
+    // Regular var → getter + setter
     @PyProperty
     var name: String
     
+    // let constant → getter only
     @PyProperty
-    var age: Int
+    let id: Int
+    
+    // Computed property (get only) → getter only
+    @PyProperty
+    var fullName: String {
+        get {
+            return name
+        }
+    }
     
     @PyInit
-    init(name: String, age: Int) {
+    init(name: String, id: Int) {
         self.name = name
-        self.age = age
+        self.id = id
     }
     
     @PyMethod
@@ -38,7 +48,7 @@ class Person {
     
     @PyMethod
     static func create(name: String) -> Person {
-        return Person(name: name, age: 0)
+        return Person(name: name, id: 0)
     }
 }
 """

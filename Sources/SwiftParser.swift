@@ -114,8 +114,8 @@ enum SwiftToPythonGenerator {
                     if addedAnyMember {
                         body.append(.blank())
                     }
-                    let property = try buildPropertyFunction(from: varDecl)
-                    body.append(property)
+                    let propertyStatements = try buildPropertyStatements(from: varDecl)
+                    body.append(contentsOf: propertyStatements)
                     memberAdded = true
                 }
             }
@@ -265,8 +265,10 @@ enum SwiftToPythonGenerator {
         ))
     }
     
-    /// Build property FunctionDef from VariableDeclSyntax
-    private static func buildPropertyFunction(from varDecl: VariableDeclSyntax) throws -> Statement {
+    /// Build property FunctionDef(s) from VariableDeclSyntax
+    /// Handles getter-only and getter+setter detection like PyFileGenerator
+    /// Returns array of statements (getter, and optionally setter with blank line)
+    private static func buildPropertyStatements(from varDecl: VariableDeclSyntax) throws -> [Statement] {
         guard let binding = varDecl.bindings.first,
               let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
             throw ParserError.invalidProperty
@@ -277,7 +279,13 @@ enum SwiftToPythonGenerator {
             swiftTypeToExpression(typeAnnotation.type)
         }
         
-        let arguments = Arguments(
+        // Determine if property is getter-only or getter+setter
+        let propertyType = detectPropertyType(binding: binding, varDecl: varDecl)
+        
+        var statements: [Statement] = []
+        
+        // Always create getter
+        let getterArgs = Arguments(
             posonlyArgs: [],
             args: [Arg(arg: "self", annotation: nil, typeComment: nil)],
             vararg: nil,
@@ -296,9 +304,9 @@ enum SwiftToPythonGenerator {
             endColOffset: nil
         ))
         
-        return .functionDef(FunctionDef(
+        statements.append(.functionDef(FunctionDef(
             name: propertyName,
-            args: arguments,
+            args: getterArgs,
             body: [.pass(Pass(lineno: 0, colOffset: 0, endLineno: nil, endColOffset: nil))],
             decoratorList: [propertyDecorator],
             returns: annotation,
@@ -308,7 +316,102 @@ enum SwiftToPythonGenerator {
             colOffset: 0,
             endLineno: nil,
             endColOffset: nil
-        ))
+        )))
+        
+        // Add setter if property is not getter-only
+        if propertyType == .getterAndSetter {
+            statements.append(.blank())
+            
+            let setterArgs = Arguments(
+                posonlyArgs: [],
+                args: [
+                    Arg(arg: "self", annotation: nil, typeComment: nil),
+                    Arg(arg: "value", annotation: annotation, typeComment: nil)
+                ],
+                vararg: nil,
+                kwonlyArgs: [],
+                kwDefaults: [],
+                kwarg: nil,
+                defaults: []
+            )
+            
+            // Create @propertyName.setter decorator
+            let setterDecorator: Expression = .attribute(Attribute(
+                value: .name(Name(
+                    id: propertyName,
+                    ctx: .load,
+                    lineno: 0,
+                    colOffset: 0,
+                    endLineno: nil,
+                    endColOffset: nil
+                )),
+                attr: "setter",
+                ctx: .load,
+                lineno: 0,
+                colOffset: 0,
+                endLineno: nil,
+                endColOffset: nil
+            ))
+            
+            statements.append(.functionDef(FunctionDef(
+                name: propertyName,
+                args: setterArgs,
+                body: [.pass(Pass(lineno: 0, colOffset: 0, endLineno: nil, endColOffset: nil))],
+                decoratorList: [setterDecorator],
+                returns: nil,
+                typeComment: nil,
+                typeParams: [],
+                lineno: 0,
+                colOffset: 0,
+                endLineno: nil,
+                endColOffset: nil
+            )))
+        }
+        
+        return statements
+    }
+    
+    /// Detect if property is getter-only or getter+setter
+    /// Based on PyFileGenerator logic
+    private static func detectPropertyType(binding: PatternBindingSyntax, varDecl: VariableDeclSyntax) -> PropertyType {
+        // 1. Check for 'if let' binding → getter only
+        if let _ = binding.pattern.as(OptionalBindingConditionSyntax.self) {
+            return .getterOnly
+        }
+        
+        // 2. Check if it's 'let' declaration → getter only
+        if varDecl.bindingSpecifier.tokenKind == .keyword(.let) {
+            return .getterOnly
+        }
+        
+        // 3. Check for computed property with accessors
+        if let accessorBlock = binding.accessorBlock {
+            switch accessorBlock.accessors {
+            case .accessors(let accessors):
+                // Check if there's a setter accessor
+                let hasSetter = accessors.contains { accessor in
+                    accessor.accessorSpecifier.tokenKind == .keyword(.set)
+                }
+                return hasSetter ? .getterAndSetter : .getterOnly
+                
+            case .getter:
+                // Getter-only computed property
+                return .getterOnly
+            }
+        }
+        
+        // 4. Regular 'var' without explicit accessors → getter + setter
+        if varDecl.bindingSpecifier.tokenKind == .keyword(.var) {
+            return .getterAndSetter
+        }
+        
+        // Default to getter-only for safety
+        return .getterOnly
+    }
+    
+    enum PropertyType {
+        case getterOnly
+        case getterAndSetter
     }
     
     /// Convert Swift TypeSyntax to Python Expression
