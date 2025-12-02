@@ -63,8 +63,13 @@ https://github.com/Py-Swift/PySwiftKit/blob/master/README.md
 # Stage 4
 
 * js closures for monaco completion providers ect.
-* provide completion handlers for @PyClass, @PyMethod, @PyProperty, @PyModule, @PyFunction macroes
-* is it possible to add some kind of swift lsp also ?
+* provide completion handlers for @PyClass, @PyMethod, @PyProperty, @PyModule, @PyFunction macros ✅
+* extend completion provider with Swift standard library types (String, Int, Array, Dictionary, Bool, etc.)
+* add Swift keyword completions (func, var, let, class, struct, enum, protocol, if, guard, for, while, etc.)
+* implement hover provider for type info and documentation
+* implement signature help provider for function parameter hints
+* add diagnostics provider using SwiftSyntax for syntax errors
+* basic semantic analysis (undefined variables, type mismatches where possible)
 
 
 # Stage 5
