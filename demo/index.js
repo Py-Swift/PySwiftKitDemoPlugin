@@ -10,7 +10,7 @@ async function initBrowser(_options) {
     };
     let module = options.module;
     if (!module) {
-        module = fetch(new URL("PySwiftKitDemo.wasm.gz", import.meta.url)).then(async r => { const ds = new DecompressionStream("gzip"); return new Response(r.body.pipeThrough(ds)); })
+        module = fetch(new URL("PySwiftKitDemo.wasm.gz", import.meta.url)).then(async r => { const ds = new DecompressionStream("gzip"); return new Response(r.body.pipeThrough(ds), { headers: { "Content-Type": "application/wasm" } }); })
     }
     const instantiateOptions = await defaultBrowserSetup({
         module,
