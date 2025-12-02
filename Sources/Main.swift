@@ -75,6 +75,9 @@ class Person {
         
         print("Both editors created")
         
+        // Setup completion providers for PySwiftKit decorators
+        CompletionProvider.setupCompletionProviders(swiftEditor: leftEditor)
+        
         // Set up text change callback
         leftEditor.onDidChangeContent { newContent in
             print("Content changed")
