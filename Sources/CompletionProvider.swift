@@ -72,8 +72,8 @@ enum CompletionProvider {
         let providerObj = JSObject()
         providerObj.provideCompletionItems = completionProvider.jsValue
         
-        // Set trigger characters to include '@'
-        providerObj.triggerCharacters = JSObject.global.Array.function!(["@"])
+        // Set trigger characters: '@' for macros, ':' for type annotations, '.' for member access
+        providerObj.triggerCharacters = JSObject.global.Array.function!(["@", ":", "."])
         
         // Register the provider
         _ = languages.registerCompletionItemProvider!("swift", providerObj)
@@ -105,13 +105,19 @@ enum CompletionProvider {
                                   "pyproperty".hasPrefix(afterAtLower) || "pyinit".hasPrefix(afterAtLower) || 
                                   "pymodule".hasPrefix(afterAtLower) || "pyfunction".hasPrefix(afterAtLower)
         
+        // Determine completion context
         if hasAtSymbol && isPySwiftKitPrefix {
-            print("  Trigger matched! Creating completions...")
+            // Show PySwiftKit macro completions
+            print("  Trigger matched! Creating PySwiftKit completions...")
             suggestions.append(contentsOf: createPySwiftKitCompletions())
-            print("  Created \(suggestions.count) suggestions")
         } else {
-            print("  No trigger match (hasAtSymbol: \(hasAtSymbol), isPySwiftKitPrefix: \(isPySwiftKitPrefix))")
+            // Always provide general Swift completions (types, keywords)
+            print("  Providing general Swift completions...")
+            suggestions.append(contentsOf: SwiftCompletions.createStdlibCompletions())
+            suggestions.append(contentsOf: SwiftCompletions.createKeywordCompletions())
         }
+        
+        print("  Created \(suggestions.count) suggestions")
         
         // Create suggestions object for Monaco
         guard let monaco = JSObject.global.monaco.object else {
@@ -125,9 +131,10 @@ enum CompletionProvider {
         // Convert suggestions to Monaco format - create plain JavaScript objects
         let jsArray = JSObject.global.Array.function!()
         
-        // Find where '@' starts in the line for proper range replacement
+        // Find where '@' starts in the line for proper range replacement (only for PySwiftKit macros)
         let atIndex = beforeCursor.lastIndex(of: "@") ?? beforeCursor.startIndex
         let atColumn = beforeCursor.distance(from: beforeCursor.startIndex, to: atIndex) + 1
+        let shouldUseRange = hasAtSymbol && isPySwiftKitPrefix
         
         for (index, suggestion) in suggestions.enumerated() {
             // Extract string values
@@ -136,7 +143,11 @@ enum CompletionProvider {
             let docStr = suggestion.documentation.string ?? ""
             let detailStr = suggestion.detail.string ?? ""
             
-            print("  Creating suggestion[\(index)]: label=\(labelStr), range: (\(lineNumber),\(atColumn)) to (\(lineNumber),\(column))")
+            if shouldUseRange {
+                print("  Creating suggestion[\(index)]: label=\(labelStr), range: (\(lineNumber),\(atColumn)) to (\(lineNumber),\(column))")
+            } else {
+                print("  Creating suggestion[\(index)]: label=\(labelStr)")
+            }
             
             // Create Monaco CompletionItem using object literal notation
             let item = JSObject.global.Object.function!.new()
@@ -148,15 +159,16 @@ enum CompletionProvider {
             item[dynamicMember: "detail"] = .string(detailStr)
             item[dynamicMember: "documentation"] = .string(docStr)
             
-            // Create range to replace from '@' to current cursor position
-            // This prevents duplicating '@'
-            let rangeObj = JSObject.global.Object.function!.new()
-            rangeObj[dynamicMember: "startLineNumber"] = .number(Double(lineNumber))
-            rangeObj[dynamicMember: "startColumn"] = .number(Double(atColumn))
-            rangeObj[dynamicMember: "endLineNumber"] = .number(Double(lineNumber))
-            rangeObj[dynamicMember: "endColumn"] = .number(Double(column))
-            
-            item[dynamicMember: "range"] = rangeObj.jsValue
+            // Only set range for PySwiftKit macros to replace the @ symbol
+            if shouldUseRange {
+                let rangeObj = JSObject.global.Object.function!.new()
+                rangeObj[dynamicMember: "startLineNumber"] = .number(Double(lineNumber))
+                rangeObj[dynamicMember: "startColumn"] = .number(Double(atColumn))
+                rangeObj[dynamicMember: "endLineNumber"] = .number(Double(lineNumber))
+                rangeObj[dynamicMember: "endColumn"] = .number(Double(column))
+                
+                item[dynamicMember: "range"] = rangeObj.jsValue
+            }
             
             // Push to array
             _ = jsArray.push(item)
