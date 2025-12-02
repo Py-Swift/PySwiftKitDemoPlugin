@@ -4,7 +4,7 @@ PySwiftKit Demo Plugin for MkDocs
 This plugin integrates the Swift WASM Monaco Editor into MkDocs pages,
 allowing interactive demonstration of PySwiftKit decorators and Python API generation.
 
-Includes support for serving Brotli-compressed WASM files for faster loading.
+Includes support for serving gzip-compressed WASM files for faster loading.
 """
 
 import os
@@ -43,13 +43,13 @@ class PySwiftKitDemoPlugin(BasePlugin):
         # Find WASM files in demo directory (built by build.sh)
         wasm_build_dir = self.plugin_dir.parent / 'demo'
         self.wasm_file = wasm_build_dir / 'PySwiftKitDemo.wasm'
-        self.wasm_br_file = wasm_build_dir / 'PySwiftKitDemo.wasm.br'
+        self.wasm_gz_file = wasm_build_dir / 'PySwiftKitDemo.wasm.gz'
         
-        if not self.wasm_file.exists() and not self.wasm_br_file.exists():
+        if not self.wasm_file.exists() and not self.wasm_gz_file.exists():
             print(f"⚠️  Warning: WASM build not found at {self.wasm_file}")
             print(f"   Run ./build.sh to build the WASM module")
-        elif self.wasm_br_file.exists():
-            print(f"PySwiftKit Plugin: Brotli-compressed WASM found at {wasm_build_dir}")
+        elif self.wasm_gz_file.exists():
+            print(f"PySwiftKit Plugin: Gzip-compressed WASM found at {wasm_build_dir}")
         else:
             print(f"PySwiftKit Plugin: WASM files found at {wasm_build_dir}")
         
@@ -59,7 +59,7 @@ class PySwiftKitDemoPlugin(BasePlugin):
         """
         Copy WASM files to docs directory before build.
         """
-        if not self.wasm_file.exists() and not self.wasm_br_file.exists():
+        if not self.wasm_file.exists() and not self.wasm_gz_file.exists():
             print("PySwiftKit Plugin: Skipping WASM copy (files not found)")
             return
         
@@ -84,9 +84,9 @@ class PySwiftKitDemoPlugin(BasePlugin):
     def on_post_build(self, config):
         """
         Copy WASM files to the output directory after build.
-        Also set up a custom server handler for Brotli compression.
+        Also set up a custom server handler for gzip compression.
         """
-        if not self.wasm_file.exists() and not self.wasm_br_file.exists():
+        if not self.wasm_file.exists() and not self.wasm_gz_file.exists():
             return
         
         # Copy demo directory to site output
@@ -100,11 +100,11 @@ class PySwiftKitDemoPlugin(BasePlugin):
             shutil.rmtree(output_dir)
         shutil.copytree(source_dir, output_dir)
         
-        # Check if Brotli compressed version exists
-        wasm_br = output_dir / 'PySwiftKitDemo.wasm.br'
-        if wasm_br.exists():
-            print(f"PySwiftKit Plugin: Brotli compressed WASM available ({wasm_br.stat().st_size / 1024 / 1024:.1f}MB)")
-            print(f"   Tip: mkdocs serve will automatically serve .br files with proper headers")
+        # Check if gzip compressed version exists
+        wasm_gz = output_dir / 'PySwiftKitDemo.wasm.gz'
+        if wasm_gz.exists():
+            print(f"PySwiftKit Plugin: Gzip compressed WASM available ({wasm_gz.stat().st_size / 1024 / 1024:.1f}MB)")
+            print(f"   Tip: Browsers will automatically decompress .gz files")
         
         print(f"PySwiftKit Plugin: WASM files copied successfully")
     
@@ -117,24 +117,24 @@ class PySwiftKitDemoPlugin(BasePlugin):
         original_serve_request = server._serve_request
         
         def custom_serve_request(environ, start_response):
-            """Intercept .wasm requests and serve .wasm.br if available."""
+            """Intercept .wasm requests and serve .wasm.gz if available."""
             path = environ.get("PATH_INFO", "")
             
             if path.endswith(".wasm"):
                 # Convert WSGI path to filesystem path
                 rel_path = path[len(server.mount_path):] if path.startswith(server.mount_path) else path.lstrip("/")
                 wasm_file = os.path.join(server.root, rel_path)
-                br_file = wasm_file + ".br"
+                gz_file = wasm_file + ".gz"
                 
-                # If .wasm doesn't exist but .br does, serve the Brotli version
-                if not os.path.exists(wasm_file) and os.path.exists(br_file):
+                # If .wasm doesn't exist but .gz does, serve the gzip version
+                if not os.path.exists(wasm_file) and os.path.exists(gz_file):
                     try:
-                        with open(br_file, 'rb') as f:
+                        with open(gz_file, 'rb') as f:
                             content = f.read()
                         
                         headers = [
                             ("Content-Type", "application/wasm"),
-                            ("Content-Encoding", "br"),
+                            ("Content-Encoding", "gzip"),
                             ("Content-Length", str(len(content))),
                             ("Cross-Origin-Embedder-Policy", "require-corp"),
                             ("Cross-Origin-Opener-Policy", "same-origin"),

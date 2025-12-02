@@ -29,28 +29,33 @@ if [ -f "build/PySwiftKitDemo.js" ]; then
     cp build/PySwiftKitDemo.js "$DEMO_DIR/"
 fi
 
-# Compress WASM with Brotli and remove uncompressed version
-echo "Compressing WASM with Brotli..."
-if command -v brotli &> /dev/null; then
+# Compress WASM with gzip (universally supported)
+echo "Compressing WASM with gzip..."
+if command -v gzip &> /dev/null; then
     # Get original size before compression
     original_size=$(stat -f%z "$DEMO_DIR/PySwiftKitDemo.wasm")
     
-    # Compress
-    brotli -9 -f "$DEMO_DIR/PySwiftKitDemo.wasm" -o "$DEMO_DIR/PySwiftKitDemo.wasm.br"
+    # Compress with gzip -9 (max compression), keep original
+    gzip -9 -f -k "$DEMO_DIR/PySwiftKitDemo.wasm"
     
-    # Remove uncompressed version to force proper .br serving
+    # Remove uncompressed to avoid LFS issues
     rm "$DEMO_DIR/PySwiftKitDemo.wasm"
     
+    # Patch index.js to load .wasm.gz with client-side decompression
+    echo "Patching index.js to load compressed WASM..."
+    sed -i.bak 's|fetch(new URL("PySwiftKitDemo.wasm", import.meta.url))|fetch(new URL("PySwiftKitDemo.wasm.gz", import.meta.url)).then(async r => { const ds = new DecompressionStream("gzip"); return new Response(r.body.pipeThrough(ds), { headers: { "Content-Type": "application/wasm" } }); })|' "$DEMO_DIR/index.js"
+    rm "$DEMO_DIR/index.js.bak"
+    
     # Show compression stats
-    compressed_size=$(stat -f%z "$DEMO_DIR/PySwiftKitDemo.wasm.br")
+    compressed_size=$(stat -f%z "$DEMO_DIR/PySwiftKitDemo.wasm.gz")
     compression_ratio=$(echo "scale=1; 100 - ($compressed_size * 100 / $original_size)" | bc)
     
     echo "   Original:   $(numfmt --to=iec-i --suffix=B $original_size 2>/dev/null || echo "$(($original_size / 1024 / 1024))MB")"
     echo "   Compressed: $(numfmt --to=iec-i --suffix=B $compressed_size 2>/dev/null || echo "$(($compressed_size / 1024 / 1024))MB")"
     echo "   Saved:      ${compression_ratio}%"
-    echo "   ✅ Only .wasm.br deployed - mkdocs plugin will serve it"
+    echo "   ✅ Client-side decompression (JS DecompressionStream API)"
 else
-    echo "   ⚠️  Brotli not found. Install with: brew install brotli"
+    echo "   ⚠️  gzip not found (should be built-in)"
     echo "   Keeping uncompressed WASM..."
 fi
 

@@ -138,53 +138,62 @@ enum SwiftCompletions {
     private static func createKeywordCompletionsOnce() -> [JSObject] {
         var completions: [JSObject] = []
         
-        // Declaration keywords
-        completions.append(createCompletion(
+        // Declaration keywords with snippets
+        completions.append(createSnippetCompletion(
             label: "func",
-            insertText: "func ",
-            documentation: "Declares a function",
+            insertText: "func ${1:name}(${2:parameters}) ${3:-> ReturnType }{\n\t${0}\n}",
+            documentation: "Declares a function with name, parameters, and body",
             detail: "Swift Keyword",
-            kind: "Keyword"
+            kind: "Snippet"
         ))
         
-        completions.append(createCompletion(
-            label: "var",
-            insertText: "var ",
-            documentation: "Declares a variable",
-            detail: "Swift Keyword",
-            kind: "Keyword"
-        ))
-        
-        completions.append(createCompletion(
-            label: "let",
-            insertText: "let ",
-            documentation: "Declares a constant",
-            detail: "Swift Keyword",
-            kind: "Keyword"
-        ))
-        
-        completions.append(createCompletion(
+        completions.append(createSnippetCompletion(
             label: "class",
-            insertText: "class ",
-            documentation: "Declares a class",
+            insertText: "class ${1:ClassName} {\n\t${0}\n}",
+            documentation: "Declares a class with name and body",
             detail: "Swift Keyword",
-            kind: "Keyword"
+            kind: "Snippet"
         ))
         
-        completions.append(createCompletion(
+        completions.append(createSnippetCompletion(
             label: "struct",
-            insertText: "struct ",
-            documentation: "Declares a structure",
+            insertText: "struct ${1:StructName} {\n\t${0}\n}",
+            documentation: "Declares a structure with name and body",
             detail: "Swift Keyword",
-            kind: "Keyword"
+            kind: "Snippet"
         ))
         
-        completions.append(createCompletion(
+        completions.append(createSnippetCompletion(
             label: "enum",
-            insertText: "enum ",
-            documentation: "Declares an enumeration",
+            insertText: "enum ${1:EnumName} {\n\tcase ${0}\n}",
+            documentation: "Declares an enumeration with name and cases",
             detail: "Swift Keyword",
-            kind: "Keyword"
+            kind: "Snippet"
+        ))
+        
+        completions.append(createSnippetCompletion(
+            label: "init",
+            insertText: "init(${1:parameters}) {\n\t${0}\n}",
+            documentation: "Declares an initializer with parameters and body",
+            detail: "Swift Keyword",
+            kind: "Snippet"
+        ))
+        
+        // Simple keywords (no snippets)
+        completions.append(createSnippetCompletion(
+            label: "var",
+            insertText: "var ${1:name}: ${2:Type} = ${0}",
+            documentation: "Declares a variable with type annotation and initial value",
+            detail: "Swift Keyword",
+            kind: "Snippet"
+        ))
+        
+        completions.append(createSnippetCompletion(
+            label: "let",
+            insertText: "let ${1:name}: ${2:Type} = ${0}",
+            documentation: "Declares a constant with type annotation and initial value",
+            detail: "Swift Keyword",
+            kind: "Snippet"
         ))
         
         completions.append(createCompletion(
@@ -381,15 +390,6 @@ enum SwiftCompletions {
             kind: "Keyword"
         ))
         
-        // Special keywords
-        completions.append(createCompletion(
-            label: "init",
-            insertText: "init",
-            documentation: "Initializer",
-            detail: "Swift Keyword",
-            kind: "Keyword"
-        ))
-        
         completions.append(createCompletion(
             label: "deinit",
             insertText: "deinit",
@@ -455,6 +455,24 @@ enum SwiftCompletions {
         completion.documentation = .string(documentation)
         completion.detail = .string(detail)
         completion.kind = .string(kind)
+        return completion
+    }
+    
+    /// Create a snippet completion item (uses Monaco snippet syntax)
+    private static func createSnippetCompletion(
+        label: String,
+        insertText: String,
+        documentation: String,
+        detail: String,
+        kind: String
+    ) -> JSObject {
+        let completion = JSObject()
+        completion.label = .string(label)
+        completion.insertText = .string(insertText)
+        completion.documentation = .string(documentation)
+        completion.detail = .string(detail)
+        completion.kind = .string(kind)
+        completion.insertTextRules = .number(4) // monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet = 4
         return completion
     }
 }

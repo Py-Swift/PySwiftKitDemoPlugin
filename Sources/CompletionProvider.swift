@@ -110,7 +110,7 @@ enum CompletionProvider {
         let atColumn = beforeCursor.distance(from: beforeCursor.startIndex, to: atIndex) + 1
         let shouldUseRange = hasAtSymbol && isPySwiftKitPrefix
         
-        for (index, suggestion) in suggestions.enumerated() {
+        for (_, suggestion) in suggestions.enumerated() {
             // Extract string values
             let labelStr = suggestion.label.string ?? ""
             let insertTextStr = suggestion.insertText.string ?? labelStr
@@ -126,6 +126,11 @@ enum CompletionProvider {
             item.kind = .number(14)
             item.detail = .string(detailStr)
             item.documentation = .string(docStr)
+            
+            // Check if this is a snippet (has insertTextRules property)
+            if let insertTextRules = suggestion.insertTextRules.number {
+                item.insertTextRules = .number(insertTextRules)
+            }
             
             // Only set range for PySwiftKit macros to replace the @ symbol
             if shouldUseRange {
