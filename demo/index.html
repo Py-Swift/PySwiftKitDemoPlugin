@@ -147,8 +147,6 @@
         });
         
         require(['vs/editor/editor.main'], async function() {
-            console.log('Monaco Editor loaded');
-            
             // Make monaco globally accessible before Swift initializes
             window.monaco = monaco;
             
@@ -160,7 +158,6 @@
             try {
                 // Initialize Swift WASM - this will call setupEditors() via @main
                 const swift = await init();
-                console.log('Swift WASM initialized successfully!');
                 showStatus('Swift WASM Ready!');
                 
             } catch (error) {
