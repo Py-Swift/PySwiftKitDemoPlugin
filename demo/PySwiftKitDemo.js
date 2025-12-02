@@ -1,10 +1,10 @@
 // JavaScriptKit WASM Loader with gzip decompression support
 async function loadSwiftWasm(wasmPath) {
-    // Try .wasm.gz first (compressed), fall back to .wasm if not found
-    let response = await fetch(wasmPath + '.gz').catch(() => null);
+    // Always try .wasm.gz first (we only deploy compressed files)
+    let response = await fetch(wasmPath + '.gz');
     let buffer;
     
-    if (response && response.ok) {
+    if (response.ok) {
         // Decompress gzipped WASM using browser's native DecompressionStream
         const compressed = await response.arrayBuffer();
         const decompressedStream = new Response(
@@ -14,9 +14,7 @@ async function loadSwiftWasm(wasmPath) {
         );
         buffer = await decompressedStream.arrayBuffer();
     } else {
-        // Fall back to uncompressed .wasm
-        response = await fetch(wasmPath);
-        buffer = await response.arrayBuffer();
+        throw new Error(`Failed to load ${wasmPath}.gz: ${response.status} ${response.statusText}`);
     }
     
     // JavaScriptKit runtime state
