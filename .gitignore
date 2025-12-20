@@ -30,4 +30,5 @@ Thumbs.db
 
 # MkDocs
 site/
-swift-wasm-interop/
+swift-wasm-interop/demo/
+docs/demo/

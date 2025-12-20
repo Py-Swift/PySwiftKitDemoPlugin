@@ -40,6 +40,14 @@ class PySwiftKitDemoPlugin(BasePlugin):
         self.wasm_path = self.config['wasm_path']
         self.enable_on = self.config['enable_on']
         
+        # Add demo directory to watch list for live reload (build.sh outputs here)
+        demo_dir = self.plugin_dir.parent / 'demo'
+        if demo_dir.exists():
+            if 'watch' not in config:
+                config['watch'] = []
+            config['watch'].append(str(demo_dir))
+            print(f"PySwiftKit Plugin: Watching {demo_dir} for changes (run ./build.sh to trigger reload)")
+        
         # Find WASM files in demo directory (built by build.sh)
         wasm_build_dir = self.plugin_dir.parent / 'demo'
         self.wasm_file = wasm_build_dir / 'PySwiftKitDemo.wasm'
@@ -111,8 +119,28 @@ class PySwiftKitDemoPlugin(BasePlugin):
     def on_serve(self, server, config, builder):
         """
         Hook into the development server to add Brotli support.
-        Wraps the WSGI _serve_request method to intercept .wasm requests.
+        Also watch the demo directory for changes.
         """
+        print(f"PySwiftKit Plugin: on_serve called with server type: {type(server)}")
+        
+        # Watch the demo directory for changes
+        demo_dir = self.plugin_dir.parent / 'demo'
+        templates_dir = self.plugin_dir.parent / 'templates'
+        
+        if demo_dir.exists():
+            try:
+                server.watch(str(demo_dir))
+                print(f"PySwiftKit Plugin: Watching {demo_dir} for changes")
+            except Exception as e:
+                print(f"PySwiftKit Plugin: Failed to watch {demo_dir}: {e}")
+        
+        if templates_dir.exists():
+            try:
+                server.watch(str(templates_dir))
+                print(f"PySwiftKit Plugin: Watching {templates_dir} for changes")
+            except Exception as e:
+                print(f"PySwiftKit Plugin: Failed to watch {templates_dir}: {e}")
+        
         # Store original _serve_request method
         original_serve_request = server._serve_request
         
