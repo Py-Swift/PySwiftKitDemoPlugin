@@ -29,7 +29,7 @@
         
         header {
             background: #252526;
-            padding: 1rem 2rem;
+            padding: 1rem 2rem 0;
             border-bottom: 1px solid #3e3e42;
         }
         
@@ -45,13 +45,43 @@
             margin-top: 0.25rem;
         }
         
-        .container {
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: #858585;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: #cccccc;
+        }
+        
+        .tab.active {
+            color: #cccccc;
+            border-bottom-color: #007acc;
+        }
+        
+        .tab-content {
             flex: 1;
-            display: grid;
+            display: none;
             grid-template-columns: 1fr 1fr;
             gap: 1px;
             background: #3e3e42;
             overflow: hidden;
+        }
+        
+        .tab-content.active {
+            display: grid;
         }
         
         .editor-panel {
@@ -73,7 +103,7 @@
             position: relative;
         }
         
-        #swift-editor, #python-editor {
+        #swift-editor, #python-editor, #python-input-editor, #swift-output-editor {
             position: absolute;
             top: 0;
             left: 0;
@@ -102,10 +132,15 @@
 <body>
     <header>
         <h1>🐍 PySwiftKit Demo Plugin</h1>
-        <div class="subtitle">Swift WASM Edition with Monaco Editor - Stage 1</div>
+        <div class="subtitle">Swift WASM Edition with Monaco Editor - Bidirectional Code Generation</div>
+        <div class="tabs">
+            <button class="tab active" data-tab="swift-to-python">Swift → Python</button>
+            <button class="tab" data-tab="python-to-swift">Python → Swift</button>
+        </div>
     </header>
     
-    <div class="container">
+    <!-- Tab 1: Swift to Python -->
+    <div id="swift-to-python" class="tab-content active">
         <div class="editor-panel">
             <div class="panel-header">Swift Code (with PySwiftKit decorators)</div>
             <div class="editor-container">
@@ -117,6 +152,23 @@
             <div class="panel-header">Generated Python API (Read-only)</div>
             <div class="editor-container">
                 <div id="python-editor"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab 2: Python to Swift -->
+    <div id="python-to-swift" class="tab-content">
+        <div class="editor-panel">
+            <div class="panel-header">Python Code</div>
+            <div class="editor-container">
+                <div id="python-input-editor"></div>
+            </div>
+        </div>
+        
+        <div class="editor-panel">
+            <div class="panel-header">Generated Swift PySwiftKit Code (Read-only)</div>
+            <div class="editor-container">
+                <div id="swift-output-editor"></div>
             </div>
         </div>
     </div>
@@ -149,6 +201,34 @@
         require(['vs/editor/editor.main'], async function() {
             // Make monaco globally accessible before Swift initializes
             window.monaco = monaco;
+            
+            // Setup tab switching
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.dataset.tab;
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Update active content
+                    tabContents.forEach(content => {
+                        if (content.id === targetTab) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                    
+                    // Trigger Monaco layout update
+                    window.monaco.editor.getEditors().forEach(editor => {
+                        setTimeout(() => editor.layout(), 0);
+                    });
+                });
+            });
             
             // Wait a bit to ensure monaco is fully ready
             await new Promise(resolve => setTimeout(resolve, 100));

@@ -1,5 +1,5 @@
 {
-  "originHash" : "a1f2f8ba8a76a9811383deb8395a6b4c16ab2f368c373364e5712393cb32bd5d",
+  "originHash" : "3da87563c3e249e3a812c398df09af21cd8bacb2534f416308802bf42073711f",
   "pins" : [
     {
       "identity" : "javascriptkit",
@@ -16,7 +16,7 @@
       "location" : "https://github.com/Py-Swift/PySwiftAST",
       "state" : {
         "branch" : "master",
-        "revision" : "02a45cf9cd773976958967634ace91dd71b1fad3"
+        "revision" : "8ba8b3c4c058af329d88f67bf0083360c0ef3745"
       }
     },
     {
