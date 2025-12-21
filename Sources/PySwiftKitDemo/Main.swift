@@ -15,7 +15,7 @@ struct PySwiftKitDemoApp {
     // Models for different tabs
     nonisolated(unsafe) static var swiftToPythonModels: (input: MonacoModel, output: MonacoModel)?
     nonisolated(unsafe) static var pythonToSwiftModels: (input: MonacoModel, output: MonacoModel)?
-    nonisolated(unsafe) static var pythonDataModelModels: (input: MonacoModel, output: MonacoModel)?
+    nonisolated(unsafe) static var pythonDataModelModels: (input: MonacoModel, kivy: MonacoModel, swift: MonacoModel)?
     
     static func main() {
         // Setup editors and models immediately
@@ -102,6 +102,11 @@ struct PySwiftKitDemoApp {
             _ = container.classList.remove("three-column")
         }
         
+        // Clear left panel options
+        if let optionsContainer = document.getElementById("panel-left-options").object {
+            optionsContainer.innerHTML = ""
+        }
+        
         switch tab {
         case "swift-to-python":
             if let models = swiftToPythonModels {
@@ -110,12 +115,8 @@ struct PySwiftKitDemoApp {
                 leftEditor.updateOptions(readOnly: false)
                 
                 // Update panel headers
-                if let leftHeader = document.getElementById("panel-left-header").object {
-                    leftHeader.textContent = "Swift Code (with PySwiftKit decorators)"
-                }
-                if let rightHeader = document.getElementById("panel-right-header").object {
-                    rightHeader.textContent = "Generated Python API (Read-only)"
-                }
+                updatePanelHeader(headerId: "panel-left-header", title: "Swift Code (with PySwiftKit decorators)")
+                updatePanelHeader(headerId: "panel-right-header", title: "Generated Python API (Read-only)")
                 
                 // Update active tab
                 if let tabElement = document.getElementById("tab-swift-to-python").object {
@@ -130,12 +131,8 @@ struct PySwiftKitDemoApp {
                 leftEditor.updateOptions(readOnly: false)
                 
                 // Update panel headers
-                if let leftHeader = document.getElementById("panel-left-header").object {
-                    leftHeader.textContent = "Python Code"
-                }
-                if let rightHeader = document.getElementById("panel-right-header").object {
-                    rightHeader.textContent = "Generated Swift PySwiftKit Code (Read-only)"
-                }
+                updatePanelHeader(headerId: "panel-left-header", title: "Python Code")
+                updatePanelHeader(headerId: "panel-right-header", title: "Generated Swift PySwiftKit Code (Read-only)")
                 
                 // Update active tab
                 if let tabElement = document.getElementById("tab-python-to-swift").object {
@@ -146,16 +143,15 @@ struct PySwiftKitDemoApp {
         case "python-datamodel":
             if let models = pythonDataModelModels {
                 leftEditor.setModel(models.input)
-                rightEditor.setModel(models.output)
+                rightEditor.setModel(models.swift)
                 leftEditor.updateOptions(readOnly: false)
                 
                 // Update panel headers
-                if let leftHeader = document.getElementById("panel-left-header").object {
-                    leftHeader.textContent = "Python Data Model"
-                }
-                if let rightHeader = document.getElementById("panel-right-header").object {
-                    rightHeader.textContent = "Generated Swift Container (Read-only)"
-                }
+                updatePanelHeader(headerId: "panel-left-header", title: "Python Data Model")
+                updatePanelHeader(headerId: "panel-right-header", title: "Generated Swift Container (Read-only)")
+                
+                // Add Kivy mode checkbox
+                setupKivyModeCheckbox()
                 
                 // Update active tab
                 if let tabElement = document.getElementById("tab-python-datamodel").object {
@@ -251,6 +247,8 @@ class Person {
     static func setupPythonToSwiftModels() {
         // Default Python code
         let defaultPythonCode = """
+
+
 class Person:
 
     name: str
@@ -294,6 +292,8 @@ class House:
     static func setupPythonDataModelModels() {
         // Default Python data model code
         let defaultPythonCode = """
+
+
 class PyDataModel:
 
     name: str
@@ -311,21 +311,28 @@ class PyDataModel:
         
         // Create models
         guard let inputModel = MonacoModel.create(value: defaultPythonCode, language: "python"),
-              let outputModel = MonacoModel.create(value: "// Generated Swift Container code will appear here...", language: "swift") else {
+              let kivyModel = MonacoModel.create(value: "# Generated Kivy EventDispatcher code will appear here...", language: "python"),
+              let swiftModel = MonacoModel.create(value: "// Generated Swift Container code will appear here...", language: "swift") else {
             return
         }
         
-        // Setup change handler on input model
+        // Setup change handler on input model to update both outputs
         inputModel.onDidChangeContent { newContent in
+            let kivyOutput = generateKivyModel(from: newContent)
+            kivyModel.setValue(kivyOutput)
+            
             let swiftOutput = generateSwiftContainer(from: newContent)
-            outputModel.setValue(swiftOutput)
+            swiftModel.setValue(swiftOutput)
         }
         
-        // Generate initial output
-        let initialSwift = generateSwiftContainer(from: defaultPythonCode)
-        outputModel.setValue(initialSwift)
+        // Generate initial outputs
+        let initialKivy = generateKivyModel(from: defaultPythonCode)
+        kivyModel.setValue(initialKivy)
         
-        pythonDataModelModels = (inputModel, outputModel)
+        let initialSwift = generateSwiftContainer(from: defaultPythonCode)
+        swiftModel.setValue(initialSwift)
+        
+        pythonDataModelModels = (inputModel, kivyModel, swiftModel)
     }
     
     /// Stage 2: Parse Swift code and generate Python using PySwiftAST + SwiftSyntax
@@ -341,5 +348,107 @@ class PyDataModel:
     /// Generate Swift Container code from Python using @PyContainer pattern
     static func generateSwiftContainer(from pythonCode: String) -> String {
         return PyDataModelGenerator.generateSwiftCode(from: pythonCode, customFormatting: true)
+    }
+    
+    /// Generate Kivy EventDispatcher model from Python
+    static func generateKivyModel(from pythonCode: String) -> String {
+        return KivyModelGenerator.generate(from: pythonCode)
+    }
+    
+    /// Helper to update panel header title
+    private static func updatePanelHeader(headerId: String, title: String) {
+        let document = JSObject.global.document
+        if let header = document.getElementById(headerId).object,
+           let titleSpan = header.querySelector!(".panel-header-title").object {
+            titleSpan.textContent = .string(title)
+        }
+    }
+    
+    /// Setup Kivy mode checkbox for datamodel tab
+    private static func setupKivyModeCheckbox() {
+        let document = JSObject.global.document
+        guard let optionsContainer = document.getElementById("panel-left-options").object else {
+            print("❌ Could not find panel-left-options")
+            return
+        }
+        
+        // Create label
+        let label = document.createElement("label")
+        guard let labelElement = label.object else { 
+            print("❌ Could not create label element")
+            return 
+        }
+        labelElement.className = .string("checkbox-label")
+        
+        // Create checkbox
+        let checkbox = document.createElement("input")
+        guard let checkboxElement = checkbox.object else { 
+            print("❌ Could not create checkbox element")
+            return 
+        }
+        checkboxElement.type = .string("checkbox")
+        checkboxElement.id = .string("kivy-mode-checkbox")
+        
+        // Create text node
+        let textNode = document.createTextNode(" Kivy Mode")
+        
+        // Append elements
+        _ = labelElement.appendChild!(checkbox)
+        _ = labelElement.appendChild!(textNode)
+        _ = optionsContainer.appendChild!(label)
+        
+        print("✅ Kivy mode checkbox created successfully")
+        
+        // Add change event listener
+        let changeHandler = JSClosure { _ in
+            toggleKivyMode(enabled: checkboxElement.checked.boolean ?? false)
+            return .undefined
+        }
+        _ = checkboxElement.addEventListener!("change", changeHandler)
+    }
+    
+    /// Toggle Kivy mode (show/hide middle panel)
+    private static func toggleKivyMode(enabled: Bool) {
+        let document = JSObject.global.document
+        guard let middlePanel = document.getElementById("panel-middle").object,
+              let container = document.getElementById("editor-container").object else {
+            return
+        }
+        
+        if enabled {
+            // Show middle panel
+            _ = middlePanel.classList.remove("hidden")
+            _ = container.classList.add("three-column")
+            
+            // Update middle panel header
+            updatePanelHeader(headerId: "panel-middle-header", title: "Kivy EventDispatcher (Read-only)")
+            
+            // Set middle editor model to Kivy output and make it read-only
+            if let models = pythonDataModelModels,
+               let middle = middleEditor {
+                middle.setModel(models.kivy)
+                middle.updateOptions(readOnly: true)
+            }
+            
+        } else {
+            // Hide middle panel
+            _ = middlePanel.classList.add("hidden")
+            _ = container.classList.remove("three-column")
+        }
+        
+        // Trigger layout update
+        let monaco = JSObject.global.monaco
+        if let monacoObj = monaco.object,
+           let editor = monacoObj.editor.object {
+            let editors = editor.getEditors!()
+            if let editorsArray = editors.object {
+                let length = Int(editorsArray.length.number ?? 0)
+                for i in 0..<length {
+                    if let editorInstance = editorsArray[i].object {
+                        _ = editorInstance.layout!()
+                    }
+                }
+            }
+        }
     }
 }

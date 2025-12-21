@@ -71,6 +71,7 @@ let package = Package(
             dependencies: [
                 "PySwiftTypeConverter",
                 .product(name: "PySwiftAST", package: "PySwiftAST"),
+                .product(name: "PySwiftCodeGen", package: "PySwiftAST"),
                 .product(name: "PyAstVisitors", package: "PySwiftAST"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),

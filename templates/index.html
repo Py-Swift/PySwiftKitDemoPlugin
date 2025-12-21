@@ -91,6 +91,33 @@
             font-size: 0.9rem;
             font-weight: 500;
             border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .panel-header-title {
+            flex: 1;
+        }
+        
+        .panel-header-options {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+            color: #cccccc;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            cursor: pointer;
         }
         
         .editor-container {
@@ -136,21 +163,30 @@
     <!-- Single set of editors that swap models -->
     <div id="editor-container" class="tab-content active">
         <div id="panel-left" class="editor-panel">
-            <div id="panel-left-header" class="panel-header">Swift Code (with PySwiftKit decorators)</div>
+            <div id="panel-left-header" class="panel-header">
+                <span class="panel-header-title">Swift Code (with PySwiftKit decorators)</span>
+                <div id="panel-left-options" class="panel-header-options">
+                    <!-- Options will be added dynamically by tabs that need them -->
+                </div>
+            </div>
             <div class="editor-container">
                 <div id="editor-left"></div>
             </div>
         </div>
         
         <div id="panel-middle" class="editor-panel hidden">
-            <div id="panel-middle-header" class="panel-header">Middle Panel</div>
+            <div id="panel-middle-header" class="panel-header">
+                <span class="panel-header-title">Middle Panel</span>
+            </div>
             <div class="editor-container">
                 <div id="editor-middle"></div>
             </div>
         </div>
         
         <div id="panel-right" class="editor-panel">
-            <div id="panel-right-header" class="panel-header">Generated Python API (Read-only)</div>
+            <div id="panel-right-header" class="panel-header">
+                <span class="panel-header-title">Generated Python API (Read-only)</span>
+            </div>
             <div class="editor-container">
                 <div id="editor-right"></div>
             </div>

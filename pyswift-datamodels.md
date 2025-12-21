@@ -19,6 +19,11 @@ class PyDataModel:
 
 ```
 
+
+
+
+
+
 is writen in swift like this...
 
 using @PyContainer
@@ -57,3 +62,34 @@ class PyDataModel {
 }
 
 ```
+
+so now we got 3 windows in this mode
+
+* left - python code input
+* middle - Kivy EventDispatcher Code (read only)
+* right - the swift @PyContainer version we got now (read only)
+
+
+```py
+class PyDataModel(EventDispatcher):
+
+    name: StringProperty
+    age: NumericProperty
+
+    def greet(self, text: str):
+        pass
+
+    def interests(self) -> list[str]:
+        pass
+
+```
+
+
+py types <-> kivy properties
+
+str - StringProperty
+int - NumericProperty
+float - NumericProperty
+bool - BooleanProperty
+list - ListProperty
+dict - DictProperty
