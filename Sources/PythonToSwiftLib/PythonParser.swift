@@ -2,6 +2,7 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import PySwiftAST
 import PyAstVisitors
+import PySwiftTypeConverter
 
 /// Python to Swift code generator for PySwiftKit
 /// Uses PyAstVisitors to traverse Python AST and generate Swift code
@@ -169,14 +170,6 @@ public enum PythonToSwiftGenerator {
     private static func generateSwiftCode(from classes: [ClassInfo], customFormatting: Bool = false) -> String {
         var declarations: [DeclSyntax] = []
         
-        // Import PySwiftKit
-        let importDecl = ImportDeclSyntax(
-            importKeyword: .keyword(.import, trailingTrivia: .space),
-            path: [ImportPathComponentSyntax(name: .identifier("PySwiftKit"))]
-        )
-        .with(\.trailingTrivia, .newlines(2))
-        declarations.append(DeclSyntax(importDecl))
-        
         // Generate each class
         for classInfo in classes {
             let classDecl = buildClassDecl(from: classInfo)
@@ -191,9 +184,9 @@ public enum PythonToSwiftGenerator {
         )
         
         if customFormatting {
-            return SwiftCodeFormatter.format(sourceFile)
+            return "\n\n" + SwiftCodeFormatter.format(sourceFile)
         }
-        return sourceFile.formatted().description
+        return "\n\n" + sourceFile.formatted().description
     }
     
     /// Build Swift class declaration from ClassInfo using SwiftSyntax

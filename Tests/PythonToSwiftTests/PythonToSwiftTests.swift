@@ -146,8 +146,8 @@ final class PythonToSwiftTests: XCTestCase {
         
         let swiftCode = PythonToSwiftGenerator.generateSwiftCode(from: pythonCode)
         
-        // Check import
-        XCTAssertTrue(swiftCode.contains("import PySwiftKit"))
+        // Check blank line spacing at start
+        XCTAssertTrue(swiftCode.hasPrefix("\n\n"), "Expected code to start with blank lines")
         
         // Check class
         XCTAssertTrue(swiftCode.contains("@PyClass"))

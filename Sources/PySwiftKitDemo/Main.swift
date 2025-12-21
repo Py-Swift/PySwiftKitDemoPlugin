@@ -1,6 +1,7 @@
 import JavaScriptKit
 import PythonToSwiftLib
 import SwiftToPythonLib
+import PyDataModels
 
 // MARK: - Main Application
 
@@ -15,8 +16,11 @@ struct PySwiftKitDemoApp {
         // Setup Swift → Python editors
         setupSwiftToPythonEditors()
         
-        // Temporarily disable Python → Swift editors
+        // Setup Python → Swift editors
         setupPythonToSwiftEditors()
+        
+        // Setup Python → Swift Container editors
+        setupPythonDataModelEditors()
     }
     
     static func setupSwiftToPythonEditors() {
@@ -113,7 +117,7 @@ class Person:
 
 class House:
 
-    peoples: [Person]
+    peoples: list[Person]
     
 """
         
@@ -155,6 +159,60 @@ class House:
     // /// Generate Swift PySwiftKit code from Python
     static func generateSwiftCode(from pythonCode: String) -> String {
         return PythonToSwiftGenerator.generateSwiftCode(from: pythonCode, customFormatting: true)
+    }
+    
+    /// Setup Python → Swift Container editors (Tab 3)
+    static func setupPythonDataModelEditors() {
+        // Default Python data model code
+        let defaultPythonCode = """
+class PyDataModel:
+
+    name: str
+    age: int
+
+    def __init__(self, name, age):
+        pass
+
+    def greet(self, text: str):
+        pass
+
+    def interests(self) -> list[str]:
+        pass
+"""
+        
+        // Create Python datamodel editor
+        guard let pythonDataModelEditor = MonacoEditor.create(
+            containerId: "python-datamodel-editor",
+            value: defaultPythonCode,
+            language: "python"
+        ) else {
+            return
+        }
+        
+        // Create Swift container output editor
+        guard let swiftContainerEditor = MonacoEditor.create(
+            containerId: "swift-container-editor",
+            value: "// Generated Swift Container code will appear here...",
+            language: "swift",
+            readOnly: true
+        ) else {
+            return
+        }
+        
+        // Set up text change callback
+        pythonDataModelEditor.onDidChangeContent { newContent in
+            let swiftOutput = generateSwiftContainer(from: newContent)
+            swiftContainerEditor.setValue(swiftOutput)
+        }
+        
+        // Generate initial Swift container
+        let initialSwift = generateSwiftContainer(from: defaultPythonCode)
+        swiftContainerEditor.setValue(initialSwift)
+    }
+    
+    /// Generate Swift Container code from Python using @PyContainer pattern
+    static func generateSwiftContainer(from pythonCode: String) -> String {
+        return PyDataModelGenerator.generateSwiftCode(from: pythonCode, customFormatting: true)
     }
     
 }

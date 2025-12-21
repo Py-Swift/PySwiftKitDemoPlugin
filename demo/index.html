@@ -29,26 +29,13 @@
         
         header {
             background: #252526;
-            padding: 1rem 2rem 0;
+            padding: 0.5rem 1rem 0;
             border-bottom: 1px solid #3e3e42;
-        }
-        
-        h1 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #cccccc;
-        }
-        
-        .subtitle {
-            font-size: 0.85rem;
-            color: #858585;
-            margin-top: 0.25rem;
         }
         
         .tabs {
             display: flex;
             gap: 0.5rem;
-            margin-top: 1rem;
         }
         
         .tab {
@@ -103,7 +90,7 @@
             position: relative;
         }
         
-        #swift-editor, #python-editor, #python-input-editor, #swift-output-editor {
+        #swift-editor, #python-editor, #python-input-editor, #swift-output-editor, #python-datamodel-editor, #swift-container-editor {
             position: absolute;
             top: 0;
             left: 0;
@@ -131,11 +118,10 @@
 </head>
 <body>
     <header>
-        <h1>🐍 PySwiftKit Demo Plugin</h1>
-        <div class="subtitle">Swift WASM Edition with Monaco Editor - Bidirectional Code Generation</div>
         <div class="tabs">
             <button class="tab active" data-tab="swift-to-python">Swift → Python</button>
             <button class="tab" data-tab="python-to-swift">Python → Swift</button>
+            <button class="tab" data-tab="python-datamodels">Python → Swift Container</button>
         </div>
     </header>
     
@@ -169,6 +155,23 @@
             <div class="panel-header">Generated Swift PySwiftKit Code (Read-only)</div>
             <div class="editor-container">
                 <div id="swift-output-editor"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab 3: Python DataModels (Container) -->
+    <div id="python-datamodels" class="tab-content">
+        <div class="editor-panel">
+            <div class="panel-header">Python Data Model</div>
+            <div class="editor-container">
+                <div id="python-datamodel-editor"></div>
+            </div>
+        </div>
+        
+        <div class="editor-panel">
+            <div class="panel-header">Generated Swift Container (Read-only)</div>
+            <div class="editor-container">
+                <div id="swift-container-editor"></div>
             </div>
         </div>
     </div>

@@ -20,6 +20,14 @@ let package = Package(
             name: "SwiftToPythonLib",
             targets: ["SwiftToPythonLib"]
         ),
+        .library(
+            name: "PyDataModels",
+            targets: ["PyDataModels"]
+        ),
+        .library(
+            name: "PySwiftTypeConverter",
+            targets: ["PySwiftTypeConverter"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftwasm/JavaScriptKit", from: "0.19.0"),
@@ -28,8 +36,17 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "PySwiftTypeConverter",
+            dependencies: [
+                .product(name: "PySwiftAST", package: "PySwiftAST"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+            ],
+            path: "Sources/PySwiftTypeConverter"
+        ),
+        .target(
             name: "PythonToSwiftLib",
             dependencies: [
+                "PySwiftTypeConverter",
                 .product(name: "PySwiftAST", package: "PySwiftAST"),
                 .product(name: "PyAstVisitors", package: "PySwiftAST"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
@@ -49,11 +66,23 @@ let package = Package(
             ],
             path: "Sources/SwiftToPythonLib"
         ),
+        .target(
+            name: "PyDataModels",
+            dependencies: [
+                "PySwiftTypeConverter",
+                .product(name: "PySwiftAST", package: "PySwiftAST"),
+                .product(name: "PyAstVisitors", package: "PySwiftAST"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+            ],
+            path: "Sources/PyDataModels"
+        ),
         .executableTarget(
             name: "PySwiftKitDemo",
             dependencies: [
                 "PythonToSwiftLib",
                 "SwiftToPythonLib",
+                "PyDataModels",
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
             ],
             path: "Sources/PySwiftKitDemo"
@@ -71,6 +100,13 @@ let package = Package(
                 "PythonToSwiftLib",
             ],
             path: "Tests/PythonToSwiftTests"
+        ),
+        .testTarget(
+            name: "PyDataModelTests",
+            dependencies: [
+                "PyDataModels",
+            ],
+            path: "Tests/PyDataModelTests"
         ),
     ]
 )
