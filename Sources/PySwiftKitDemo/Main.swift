@@ -7,23 +7,171 @@ import PyDataModels
 
 @main
 struct PySwiftKitDemoApp {
+    // Shared editor instances
+    nonisolated(unsafe) static var leftEditor: MonacoEditor?
+    nonisolated(unsafe) static var rightEditor: MonacoEditor?
+    
+    // Models for different tabs
+    nonisolated(unsafe) static var swiftToPythonModels: (input: MonacoModel, output: MonacoModel)?
+    nonisolated(unsafe) static var pythonToSwiftModels: (input: MonacoModel, output: MonacoModel)?
+    nonisolated(unsafe) static var pythonDataModelModels: (input: MonacoModel, output: MonacoModel)?
+    
     static func main() {
-        // Setup editors immediately
+        // Setup editors and models immediately
         setupEditors()
     }
     
     static func setupEditors() {
-        // Setup Swift → Python editors
-        setupSwiftToPythonEditors()
+        // Create single editor instances
+        leftEditor = MonacoEditor.create(containerId: "editor-left", readOnly: false)
+        rightEditor = MonacoEditor.create(containerId: "editor-right", readOnly: true)
         
-        // Setup Python → Swift editors
-        setupPythonToSwiftEditors()
+        guard leftEditor != nil, rightEditor != nil else {
+            return
+        }
         
-        // Setup Python → Swift Container editors
-        setupPythonDataModelEditors()
+        // Create models for all tabs
+        setupSwiftToPythonModels()
+        setupPythonToSwiftModels()
+        setupPythonDataModelModels()
+        
+        // Set initial tab (Swift → Python)
+        switchToTab(tab: "swift-to-python")
+        
+        // Setup tab switching
+        setupTabSwitching()
     }
     
-    static func setupSwiftToPythonEditors() {
+    static func setupTabSwitching() {
+        let document = JSObject.global.document
+        
+        // Tab 1: Swift → Python
+        if let tab1 = document.getElementById("tab-swift-to-python").object {
+            let closure1 = JSClosure { _ in
+                switchToTab(tab: "swift-to-python")
+                return .undefined
+            }
+            _ = tab1.addEventListener!("click", closure1)
+        }
+        
+        // Tab 2: Python → Swift
+        if let tab2 = document.getElementById("tab-python-to-swift").object {
+            let closure2 = JSClosure { _ in
+                switchToTab(tab: "python-to-swift")
+                return .undefined
+            }
+            _ = tab2.addEventListener!("click", closure2)
+        }
+        
+        // Tab 3: Python → Swift Container
+        if let tab3 = document.getElementById("tab-python-datamodel").object {
+            let closure3 = JSClosure { _ in
+                switchToTab(tab: "python-datamodel")
+                return .undefined
+            }
+            _ = tab3.addEventListener!("click", closure3)
+        }
+    }
+    
+    static func switchToTab(tab: String) {
+        guard let leftEditor = leftEditor, let rightEditor = rightEditor else {
+            return
+        }
+        
+        let document = JSObject.global.document
+        
+        // Update active tab styling
+        if let tabs = document.querySelectorAll(".tab").object {
+            let length = Int(tabs.length.number ?? 0)
+            for i in 0..<length {
+                if let tabElement = tabs[i].object {
+                    _ = tabElement.classList.remove("active")
+                }
+            }
+        }
+        
+        switch tab {
+        case "swift-to-python":
+            if let models = swiftToPythonModels {
+                leftEditor.setModel(models.input)
+                rightEditor.setModel(models.output)
+                leftEditor.updateOptions(readOnly: false)
+                
+                // Update panel headers
+                if let leftHeader = document.getElementById("panel-left-header").object {
+                    leftHeader.textContent = "Swift Code (with PySwiftKit decorators)"
+                }
+                if let rightHeader = document.getElementById("panel-right-header").object {
+                    rightHeader.textContent = "Generated Python API (Read-only)"
+                }
+                
+                // Update active tab
+                if let tabElement = document.getElementById("tab-swift-to-python").object {
+                    _ = tabElement.classList.add("active")
+                }
+            }
+            
+        case "python-to-swift":
+            if let models = pythonToSwiftModels {
+                leftEditor.setModel(models.input)
+                rightEditor.setModel(models.output)
+                leftEditor.updateOptions(readOnly: false)
+                
+                // Update panel headers
+                if let leftHeader = document.getElementById("panel-left-header").object {
+                    leftHeader.textContent = "Python Code"
+                }
+                if let rightHeader = document.getElementById("panel-right-header").object {
+                    rightHeader.textContent = "Generated Swift PySwiftKit Code (Read-only)"
+                }
+                
+                // Update active tab
+                if let tabElement = document.getElementById("tab-python-to-swift").object {
+                    _ = tabElement.classList.add("active")
+                }
+            }
+            
+        case "python-datamodel":
+            if let models = pythonDataModelModels {
+                leftEditor.setModel(models.input)
+                rightEditor.setModel(models.output)
+                leftEditor.updateOptions(readOnly: false)
+                
+                // Update panel headers
+                if let leftHeader = document.getElementById("panel-left-header").object {
+                    leftHeader.textContent = "Python Data Model"
+                }
+                if let rightHeader = document.getElementById("panel-right-header").object {
+                    rightHeader.textContent = "Generated Swift Container (Read-only)"
+                }
+                
+                // Update active tab
+                if let tabElement = document.getElementById("tab-python-datamodel").object {
+                    _ = tabElement.classList.add("active")
+                }
+            }
+            
+        default:
+            break
+        }
+        
+        // Trigger layout update
+        let monaco = JSObject.global.monaco
+        if let monacoObj = monaco.object,
+           let editor = monacoObj.editor.object {
+            let editors = editor.getEditors!()
+            if let editorsArray = editors.object {
+                let length = Int(editorsArray.length.number ?? 0)
+                for i in 0..<length {
+                    if let editorInstance = editorsArray[i].object {
+                        _ = editorInstance.layout!()
+                    }
+                }
+            }
+        }
+    }
+    
+    static func setupSwiftToPythonModels() {
         // Default Swift code with PySwiftKit decorators
         let defaultSwiftCode = """
 import PySwiftKit
@@ -64,40 +212,31 @@ class Person {
 }
 """
         
-        // Create left editor (Swift with PySwiftKit decorators)
-        guard let leftEditor = MonacoEditor.create(
-            containerId: "swift-editor",
-            value: defaultSwiftCode,
-            language: "swift"
-        ) else {
+        // Create models
+        guard let inputModel = MonacoModel.create(value: defaultSwiftCode, language: "swift"),
+              let outputModel = MonacoModel.create(value: "# Generated Python API will appear here...", language: "python") else {
             return
         }
         
-        // Create right editor (Generated Python API)
-        guard let rightEditor = MonacoEditor.create(
-            containerId: "python-editor",
-            value: "# Generated Python API will appear here...",
-            language: "python",
-            readOnly: true
-        ) else {
-            return
-        }
-        
-        // Setup completion providers for PySwiftKit decorators
-        CompletionProvider.setupCompletionProviders(swiftEditor: leftEditor)
-        
-        // Set up text change callback
-        leftEditor.onDidChangeContent { newContent in
+        // Setup change handler on input model
+        inputModel.onDidChangeContent { newContent in
             let pythonOutput = generatePythonStub(from: newContent)
-            rightEditor.setValue(pythonOutput)
+            outputModel.setValue(pythonOutput)
         }
         
-        // Generate initial Python output
+        // Generate initial output
         let initialPython = generatePythonStub(from: defaultSwiftCode)
-        rightEditor.setValue(initialPython)
+        outputModel.setValue(initialPython)
+        
+        swiftToPythonModels = (inputModel, outputModel)
+        
+        // Setup completion providers for first model
+        if let leftEditor = leftEditor {
+            CompletionProvider.setupCompletionProviders(swiftEditor: leftEditor)
+        }
     }
     
-    static func setupPythonToSwiftEditors() {
+    static func setupPythonToSwiftModels() {
         // Default Python code
         let defaultPythonCode = """
 class Person:
@@ -121,48 +260,26 @@ class House:
     
 """
         
-        // Create Python input editor
-        guard let pythonInputEditor = MonacoEditor.create(
-            containerId: "python-input-editor",
-            value: defaultPythonCode,
-            language: "python"
-        ) else {
+        // Create models
+        guard let inputModel = MonacoModel.create(value: defaultPythonCode, language: "python"),
+              let outputModel = MonacoModel.create(value: "// Generated Swift PySwiftKit code will appear here...", language: "swift") else {
             return
         }
         
-        // Create Swift output editor
-        guard let swiftOutputEditor = MonacoEditor.create(
-            containerId: "swift-output-editor",
-            value: "// Generated Swift PySwiftKit code will appear here...",
-            language: "swift",
-            readOnly: true
-        ) else {
-            return
-        }
-        
-        // Set up text change callback
-        pythonInputEditor.onDidChangeContent { newContent in
+        // Setup change handler on input model
+        inputModel.onDidChangeContent { newContent in
             let swiftOutput = generateSwiftCode(from: newContent)
-            swiftOutputEditor.setValue(swiftOutput)
+            outputModel.setValue(swiftOutput)
         }
         
-        // Generate initial Swift output
+        // Generate initial output
         let initialSwift = generateSwiftCode(from: defaultPythonCode)
-        swiftOutputEditor.setValue(initialSwift)
+        outputModel.setValue(initialSwift)
+        
+        pythonToSwiftModels = (inputModel, outputModel)
     }
     
-    /// Stage 2: Parse Swift code and generate Python using PySwiftAST + SwiftSyntax
-    static func generatePythonStub(from swiftCode: String) -> String {
-        return SwiftToPythonGenerator.generatePythonStub(from: swiftCode)
-    }
-    
-    // /// Generate Swift PySwiftKit code from Python
-    static func generateSwiftCode(from pythonCode: String) -> String {
-        return PythonToSwiftGenerator.generateSwiftCode(from: pythonCode, customFormatting: true)
-    }
-    
-    /// Setup Python → Swift Container editors (Tab 3)
-    static func setupPythonDataModelEditors() {
+    static func setupPythonDataModelModels() {
         // Default Python data model code
         let defaultPythonCode = """
 class PyDataModel:
@@ -180,39 +297,37 @@ class PyDataModel:
         pass
 """
         
-        // Create Python datamodel editor
-        guard let pythonDataModelEditor = MonacoEditor.create(
-            containerId: "python-datamodel-editor",
-            value: defaultPythonCode,
-            language: "python"
-        ) else {
+        // Create models
+        guard let inputModel = MonacoModel.create(value: defaultPythonCode, language: "python"),
+              let outputModel = MonacoModel.create(value: "// Generated Swift Container code will appear here...", language: "swift") else {
             return
         }
         
-        // Create Swift container output editor
-        guard let swiftContainerEditor = MonacoEditor.create(
-            containerId: "swift-container-editor",
-            value: "// Generated Swift Container code will appear here...",
-            language: "swift",
-            readOnly: true
-        ) else {
-            return
-        }
-        
-        // Set up text change callback
-        pythonDataModelEditor.onDidChangeContent { newContent in
+        // Setup change handler on input model
+        inputModel.onDidChangeContent { newContent in
             let swiftOutput = generateSwiftContainer(from: newContent)
-            swiftContainerEditor.setValue(swiftOutput)
+            outputModel.setValue(swiftOutput)
         }
         
-        // Generate initial Swift container
+        // Generate initial output
         let initialSwift = generateSwiftContainer(from: defaultPythonCode)
-        swiftContainerEditor.setValue(initialSwift)
+        outputModel.setValue(initialSwift)
+        
+        pythonDataModelModels = (inputModel, outputModel)
+    }
+    
+    /// Stage 2: Parse Swift code and generate Python using PySwiftAST + SwiftSyntax
+    static func generatePythonStub(from swiftCode: String) -> String {
+        return SwiftToPythonGenerator.generatePythonStub(from: swiftCode)
+    }
+    
+    // /// Generate Swift PySwiftKit code from Python
+    static func generateSwiftCode(from pythonCode: String) -> String {
+        return PythonToSwiftGenerator.generateSwiftCode(from: pythonCode, customFormatting: true)
     }
     
     /// Generate Swift Container code from Python using @PyContainer pattern
     static func generateSwiftContainer(from pythonCode: String) -> String {
         return PyDataModelGenerator.generateSwiftCode(from: pythonCode, customFormatting: true)
     }
-    
 }

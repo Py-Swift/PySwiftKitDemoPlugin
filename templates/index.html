@@ -90,7 +90,7 @@
             position: relative;
         }
         
-        #swift-editor, #python-editor, #python-input-editor, #swift-output-editor, #python-datamodel-editor, #swift-container-editor {
+        #editor-left, #editor-right {
             position: absolute;
             top: 0;
             left: 0;
@@ -119,59 +119,25 @@
 <body>
     <header>
         <div class="tabs">
-            <button class="tab active" data-tab="swift-to-python">Swift → Python</button>
-            <button class="tab" data-tab="python-to-swift">Python → Swift</button>
-            <button class="tab" data-tab="python-datamodels">Python → Swift Container</button>
+            <button id="tab-swift-to-python" class="tab active">Swift → Python</button>
+            <button id="tab-python-to-swift" class="tab">Python → Swift</button>
+            <button id="tab-python-datamodel" class="tab">Python → Swift Container</button>
         </div>
     </header>
     
-    <!-- Tab 1: Swift to Python -->
-    <div id="swift-to-python" class="tab-content active">
+    <!-- Single pair of editors that swap models -->
+    <div class="tab-content active">
         <div class="editor-panel">
-            <div class="panel-header">Swift Code (with PySwiftKit decorators)</div>
+            <div id="panel-left-header" class="panel-header">Swift Code (with PySwiftKit decorators)</div>
             <div class="editor-container">
-                <div id="swift-editor"></div>
+                <div id="editor-left"></div>
             </div>
         </div>
         
         <div class="editor-panel">
-            <div class="panel-header">Generated Python API (Read-only)</div>
+            <div id="panel-right-header" class="panel-header">Generated Python API (Read-only)</div>
             <div class="editor-container">
-                <div id="python-editor"></div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Tab 2: Python to Swift -->
-    <div id="python-to-swift" class="tab-content">
-        <div class="editor-panel">
-            <div class="panel-header">Python Code</div>
-            <div class="editor-container">
-                <div id="python-input-editor"></div>
-            </div>
-        </div>
-        
-        <div class="editor-panel">
-            <div class="panel-header">Generated Swift PySwiftKit Code (Read-only)</div>
-            <div class="editor-container">
-                <div id="swift-output-editor"></div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Tab 3: Python DataModels (Container) -->
-    <div id="python-datamodels" class="tab-content">
-        <div class="editor-panel">
-            <div class="panel-header">Python Data Model</div>
-            <div class="editor-container">
-                <div id="python-datamodel-editor"></div>
-            </div>
-        </div>
-        
-        <div class="editor-panel">
-            <div class="panel-header">Generated Swift Container (Read-only)</div>
-            <div class="editor-container">
-                <div id="swift-container-editor"></div>
+                <div id="editor-right"></div>
             </div>
         </div>
     </div>
@@ -204,34 +170,6 @@
         require(['vs/editor/editor.main'], async function() {
             // Make monaco globally accessible before Swift initializes
             window.monaco = monaco;
-            
-            // Setup tab switching
-            const tabs = document.querySelectorAll('.tab');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const targetTab = tab.dataset.tab;
-                    
-                    // Update active tab
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    
-                    // Update active content
-                    tabContents.forEach(content => {
-                        if (content.id === targetTab) {
-                            content.classList.add('active');
-                        } else {
-                            content.classList.remove('active');
-                        }
-                    });
-                    
-                    // Trigger Monaco layout update
-                    window.monaco.editor.getEditors().forEach(editor => {
-                        setTimeout(() => editor.layout(), 0);
-                    });
-                });
-            });
             
             // Wait a bit to ensure monaco is fully ready
             await new Promise(resolve => setTimeout(resolve, 100));

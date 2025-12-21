@@ -38,8 +38,11 @@ enum CompletionProvider {
             let column = position.column.number ?? 1
             print("Line number: \(lineNumber), Column: \(column)")
             
-            // Get text from our editor instance
-            let fullText = editor.getValue()
+            // Get text from the editor's model
+            guard let model = editor.getModel() else {
+                return .null
+            }
+            let fullText = model.getValue()
             let lines = fullText.split(separator: "\n", omittingEmptySubsequences: false)
             
             guard lineNumber > 0 && Int(lineNumber) <= lines.count else {
