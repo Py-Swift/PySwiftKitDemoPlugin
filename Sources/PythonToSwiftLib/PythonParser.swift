@@ -209,6 +209,11 @@ public enum PythonToSwiftGenerator {
             members.append(buildMethodDecl(from: method))
         }
         
+        // Add blank line before first member if members exist
+        if !members.isEmpty {
+            members[0].leadingTrivia = .newline
+        }
+        
         return ClassDeclSyntax(
             attributes: AttributeListSyntax {
                 AttributeSyntax(

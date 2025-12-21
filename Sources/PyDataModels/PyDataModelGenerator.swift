@@ -58,6 +58,11 @@ public enum PyDataModelGenerator {
     private static func generateContainerClass(_ classInfo: ContainerClassInfo) -> ClassDeclSyntax {
         let hasProperties = !classInfo.properties.isEmpty
         
+        var methods: [FunctionDeclSyntax] = []
+        for method in classInfo.methods {
+            methods.append(generatePyCallMethod(method))
+        }
+        
         return ClassDeclSyntax(
             attributes: AttributeListSyntax {
                 AttributeSyntax(
@@ -72,9 +77,16 @@ public enum PyDataModelGenerator {
             name: .identifier(classInfo.name),
             memberBlock: MemberBlockSyntax(
                 members: MemberBlockItemListSyntax {
-                    // Generate @PyCall methods
-                    for method in classInfo.methods {
-                        generatePyCallMethod(method)
+                    // Generate @PyCall methods with blank line before first
+                    for (index, method) in methods.enumerated() {
+                        if index == 0 {
+                            MemberBlockItemSyntax(
+                                leadingTrivia: .newline,
+                                decl: method
+                            )
+                        } else {
+                            MemberBlockItemSyntax(decl: method)
+                        }
                     }
                 }
             )
