@@ -71,10 +71,18 @@
             display: grid;
         }
         
+        .tab-content.three-column {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+        
         .editor-panel {
             background: #1e1e1e;
             display: flex;
             flex-direction: column;
+        }
+        
+        .editor-panel.hidden {
+            display: none;
         }
         
         .panel-header {
@@ -90,7 +98,7 @@
             position: relative;
         }
         
-        #editor-left, #editor-right {
+        #editor-left, #editor-middle, #editor-right {
             position: absolute;
             top: 0;
             left: 0;
@@ -125,16 +133,23 @@
         </div>
     </header>
     
-    <!-- Single pair of editors that swap models -->
-    <div class="tab-content active">
-        <div class="editor-panel">
+    <!-- Single set of editors that swap models -->
+    <div id="editor-container" class="tab-content active">
+        <div id="panel-left" class="editor-panel">
             <div id="panel-left-header" class="panel-header">Swift Code (with PySwiftKit decorators)</div>
             <div class="editor-container">
                 <div id="editor-left"></div>
             </div>
         </div>
         
-        <div class="editor-panel">
+        <div id="panel-middle" class="editor-panel hidden">
+            <div id="panel-middle-header" class="panel-header">Middle Panel</div>
+            <div class="editor-container">
+                <div id="editor-middle"></div>
+            </div>
+        </div>
+        
+        <div id="panel-right" class="editor-panel">
             <div id="panel-right-header" class="panel-header">Generated Python API (Read-only)</div>
             <div class="editor-container">
                 <div id="editor-right"></div>

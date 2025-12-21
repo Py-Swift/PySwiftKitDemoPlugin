@@ -9,6 +9,7 @@ import PyDataModels
 struct PySwiftKitDemoApp {
     // Shared editor instances
     nonisolated(unsafe) static var leftEditor: MonacoEditor?
+    nonisolated(unsafe) static var middleEditor: MonacoEditor?
     nonisolated(unsafe) static var rightEditor: MonacoEditor?
     
     // Models for different tabs
@@ -22,11 +23,12 @@ struct PySwiftKitDemoApp {
     }
     
     static func setupEditors() {
-        // Create single editor instances
+        // Create editor instances
         leftEditor = MonacoEditor.create(containerId: "editor-left", readOnly: false)
+        middleEditor = MonacoEditor.create(containerId: "editor-middle", readOnly: false)
         rightEditor = MonacoEditor.create(containerId: "editor-right", readOnly: true)
         
-        guard leftEditor != nil, rightEditor != nil else {
+        guard leftEditor != nil, middleEditor != nil, rightEditor != nil else {
             return
         }
         
@@ -88,6 +90,16 @@ struct PySwiftKitDemoApp {
                     _ = tabElement.classList.remove("active")
                 }
             }
+        }
+        
+        // Hide middle panel by default
+        if let middlePanel = document.getElementById("panel-middle").object {
+            _ = middlePanel.classList.add("hidden")
+        }
+        
+        // Remove three-column class
+        if let container = document.getElementById("editor-container").object {
+            _ = container.classList.remove("three-column")
         }
         
         switch tab {
