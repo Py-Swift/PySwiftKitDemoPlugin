@@ -12,6 +12,18 @@ let package = Package(
             name: "PySwiftKitDemo",
             targets: ["PySwiftKitDemo"]
         ),
+        .executable(
+            name: "SwiftToPythonDemo",
+            targets: ["SwiftToPythonDemo"]
+        ),
+        .executable(
+            name: "PythonToSwiftDemo",
+            targets: ["PythonToSwiftDemo"]
+        ),
+        .executable(
+            name: "PyDataModelDemo",
+            targets: ["PyDataModelDemo"]
+        ),
         .library(
             name: "PythonToSwiftLib",
             targets: ["PythonToSwiftLib"]
@@ -87,6 +99,30 @@ let package = Package(
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
             ],
             path: "Sources/PySwiftKitDemo"
+        ),
+        .executableTarget(
+            name: "SwiftToPythonDemo",
+            dependencies: [
+                "SwiftToPythonLib",
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+            ],
+            path: "Sources/SwiftToPythonDemo"
+        ),
+        .executableTarget(
+            name: "PythonToSwiftDemo",
+            dependencies: [
+                "PythonToSwiftLib",
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+            ],
+            path: "Sources/PythonToSwiftDemo"
+        ),
+        .executableTarget(
+            name: "PyDataModelDemo",
+            dependencies: [
+                "PyDataModels",
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+            ],
+            path: "Sources/PyDataModelDemo"
         ),
         .executableTarget(
             name: "ParserTest",

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Building PySwiftKit Demo Plugin for WASM..."
+echo "Building PySwiftKit Demo Plugins for WASM..."
 
 # Use absolute path to Swift 6.2.1 to bypass venv PATH issues
 SWIFT_BIN="$HOME/.swiftly/bin/swift"
@@ -13,75 +13,81 @@ DEMO_DIR="demo"
 echo "Using Swift 6.2.1 with WASM SDK..."
 $SWIFT_BIN --version
 
-# Build using JavaScriptKit plugin
-echo "Building Swift package for WASM target..."
-$SWIFT_BIN package -c release --swift-sdk swift-6.2.1-RELEASE_wasm js --use-cdn --product PySwiftKitDemo
-# Create demo directory if it doesn't exist
-mkdir -p "$DEMO_DIR"
+# Define all products to build
+declare -a PRODUCTS=("PySwiftKitDemo" "SwiftToPythonDemo" "PythonToSwiftDemo" "PyDataModelDemo")
+declare -a OUTPUT_DIRS=("$DEMO_DIR" "docs/swift-to-python" "docs/python-to-swift" "docs/python-datamodel")
+declare -a HTML_TEMPLATES=("templates/index.html" "templates/swift-to-python.html" "templates/python-to-swift.html" "templates/python-datamodel.html")
 
-# Copy generated files to demo directory
-echo "Copying build artifacts to demo directory..."
-cp -r "$BUILD_DIR"/* "$DEMO_DIR/"
-
-# Copy index.html template
-if [ -f "templates/index.html" ]; then
-    echo "Copying index.html template..."
-    cp templates/index.html "$DEMO_DIR/"
-fi
-
-# Also copy the custom PySwiftKitDemo.js loader if it exists
-if [ -f "build/PySwiftKitDemo.js" ]; then
-    echo "Copying custom JS loader..."
-    cp build/PySwiftKitDemo.js "$DEMO_DIR/"
-fi
-
-# Compress WASM with gzip (universally supported)
-echo "Compressing WASM with gzip..."
-if command -v gzip &> /dev/null; then
-    # Get original size before compression
-    original_size=$(stat -f%z "$DEMO_DIR/PySwiftKitDemo.wasm")
+# Build each product
+for i in "${!PRODUCTS[@]}"; do
+    PRODUCT="${PRODUCTS[$i]}"
+    OUTPUT="${OUTPUT_DIRS[$i]}"
+    TEMPLATE="${HTML_TEMPLATES[$i]}"
     
-    # Compress with gzip -9 (max compression), keep original
-    gzip -9 -f -k "$DEMO_DIR/PySwiftKitDemo.wasm"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Building: $PRODUCT"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
-    # Remove uncompressed to avoid LFS issues
-    rm "$DEMO_DIR/PySwiftKitDemo.wasm"
+    # Build using JavaScriptKit plugin
+    echo "Building Swift package for WASM target..."
+    $SWIFT_BIN package -c release --swift-sdk swift-6.2.1-RELEASE_wasm js --use-cdn --product "$PRODUCT"
     
-    # Patch index.js to load .wasm.gz with client-side decompression
-    echo "Patching index.js to load compressed WASM..."
-    sed -i.bak 's|fetch(new URL("PySwiftKitDemo.wasm", import.meta.url))|fetch(new URL("PySwiftKitDemo.wasm.gz", import.meta.url)).then(async r => { const ds = new DecompressionStream("gzip"); return new Response(r.body.pipeThrough(ds), { headers: { "Content-Type": "application/wasm" } }); })|' "$DEMO_DIR/index.js"
-    rm "$DEMO_DIR/index.js.bak"
+    # Create output directory
+    mkdir -p "$OUTPUT"
     
-    # Show compression stats
-    compressed_size=$(stat -f%z "$DEMO_DIR/PySwiftKitDemo.wasm.gz")
-    compression_ratio=$(echo "scale=1; 100 - ($compressed_size * 100 / $original_size)" | bc)
+    # Copy generated files to output directory
+    echo "Copying build artifacts to $OUTPUT..."
+    cp -r "$BUILD_DIR"/* "$OUTPUT/"
     
-    echo "   Original:   $(numfmt --to=iec-i --suffix=B $original_size 2>/dev/null || echo "$(($original_size / 1024 / 1024))MB")"
-    echo "   Compressed: $(numfmt --to=iec-i --suffix=B $compressed_size 2>/dev/null || echo "$(($compressed_size / 1024 / 1024))MB")"
-    echo "   Saved:      ${compression_ratio}%"
-    echo "   ✅ Client-side decompression (JS DecompressionStream API)"
-else
-    echo "   ⚠️  gzip not found (should be built-in)"
-    echo "   Keeping uncompressed WASM..."
-fi
-
-echo ""
-echo "✅ Build complete!"
-echo "   Output directory: $DEMO_DIR/"
-
-# Show appropriate file size based on what exists
-if [ -f "$DEMO_DIR/PySwiftKitDemo.wasm.br" ]; then
-    echo "   WASM size: $(du -h "$DEMO_DIR/PySwiftKitDemo.wasm.br" | cut -f1) (Brotli compressed)"
-elif [ -f "$DEMO_DIR/PySwiftKitDemo.wasm" ]; then
-    echo "   WASM size: $(du -h "$DEMO_DIR/PySwiftKitDemo.wasm" | cut -f1) (uncompressed)"
-fi
+    # Copy HTML template
+    if [ -f "$TEMPLATE" ]; then
+        echo "Copying HTML template..."
+        cp "$TEMPLATE" "$OUTPUT/index.html"
+    fi
+    
+    # Compress WASM with gzip
+    echo "Compressing WASM with gzip..."
+    if command -v gzip &> /dev/null; then
+        # Get original size before compression
+        original_size=$(stat -f%z "$OUTPUT/$PRODUCT.wasm")
+        
+        # Compress with gzip -9 (max compression), keep original
+        gzip -9 -f -k "$OUTPUT/$PRODUCT.wasm"
+        
+        # Remove uncompressed to avoid LFS issues
+        rm "$OUTPUT/$PRODUCT.wasm"
+        
+        # Patch index.js to load .wasm.gz with client-side decompression
+        echo "Patching index.js to load compressed WASM..."
+        sed -i.bak "s|fetch(new URL(\"$PRODUCT.wasm\", import.meta.url))|fetch(new URL(\"$PRODUCT.wasm.gz\", import.meta.url)).then(async r => { const ds = new DecompressionStream(\"gzip\"); return new Response(r.body.pipeThrough(ds), { headers: { \"Content-Type\": \"application/wasm\" } }); })|" "$OUTPUT/index.js"
+        rm "$OUTPUT/index.js.bak"
+        
+        # Show compression stats
+        compressed_size=$(stat -f%z "$OUTPUT/$PRODUCT.wasm.gz")
+        compression_ratio=$(echo "scale=1; 100 - ($compressed_size * 100 / $original_size)" | bc)
+        
+        echo "   Original:   $(numfmt --to=iec-i --suffix=B $original_size 2>/dev/null || echo "$(($original_size / 1024 / 1024))MB")"
+        echo "   Compressed: $(numfmt --to=iec-i --suffix=B $compressed_size 2>/dev/null || echo "$(($compressed_size / 1024 / 1024))MB")"
+        echo "   Saved:      ${compression_ratio}%"
+    else
+        echo "   ⚠️  gzip not found"
+    fi
+    
+    echo "✅ $PRODUCT complete → $OUTPUT"
+done
 
 # Trigger mkdocs reload if serving
 if [ -d "docs" ]; then
     touch docs/demo.md 2>/dev/null || true
+    echo ""
     echo "   🔄 Triggered mkdocs reload"
 fi
 
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ All builds complete!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "To test locally, run:"
 echo "   uv run mkdocs serve"

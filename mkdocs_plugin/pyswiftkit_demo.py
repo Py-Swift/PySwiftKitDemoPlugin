@@ -40,26 +40,23 @@ class PySwiftKitDemoPlugin(BasePlugin):
         self.wasm_path = self.config['wasm_path']
         self.enable_on = self.config['enable_on']
         
-        # Add demo directory to watch list for live reload (build.sh outputs here)
-        demo_dir = self.plugin_dir.parent / 'demo'
-        if demo_dir.exists():
-            if 'watch' not in config:
-                config['watch'] = []
-            config['watch'].append(str(demo_dir))
-            print(f"PySwiftKit Plugin: Watching {demo_dir} for changes (run ./build.sh to trigger reload)")
+        # Define all demo directories to watch
+        self.demo_dirs = [
+            ('demo', 'PySwiftKitDemo'),
+            ('docs/swift-to-python', 'SwiftToPythonDemo'),
+            ('docs/python-to-swift', 'PythonToSwiftDemo'),
+            ('docs/python-datamodel', 'PyDataModelDemo'),
+        ]
         
-        # Find WASM files in demo directory (built by build.sh)
-        wasm_build_dir = self.plugin_dir.parent / 'demo'
-        self.wasm_file = wasm_build_dir / 'PySwiftKitDemo.wasm'
-        self.wasm_gz_file = wasm_build_dir / 'PySwiftKitDemo.wasm.gz'
+        # Add demo directories to watch list for live reload
+        for demo_path, _ in self.demo_dirs:
+            demo_dir = self.plugin_dir.parent / demo_path
+            if demo_dir.exists():
+                if 'watch' not in config:
+                    config['watch'] = []
+                config['watch'].append(str(demo_dir))
         
-        if not self.wasm_file.exists() and not self.wasm_gz_file.exists():
-            print(f"⚠️  Warning: WASM build not found at {self.wasm_file}")
-            print(f"   Run ./build.sh to build the WASM module")
-        elif self.wasm_gz_file.exists():
-            print(f"PySwiftKit Plugin: Gzip-compressed WASM found at {wasm_build_dir}")
-        else:
-            print(f"PySwiftKit Plugin: WASM files found at {wasm_build_dir}")
+        print(f"PySwiftKit Plugin: Watching demo directories for changes (run ./build.sh to trigger reload)")
         
         return config
     
@@ -67,20 +64,26 @@ class PySwiftKitDemoPlugin(BasePlugin):
         """
         Copy WASM files to docs directory before build.
         """
-        if not self.wasm_file.exists() and not self.wasm_gz_file.exists():
-            print("PySwiftKit Plugin: Skipping WASM copy (files not found)")
-            return
-        
-        # Copy entire demo directory to docs
         import shutil
-        source_dir = self.plugin_dir.parent / 'demo'
-        docs_dir = Path(config['docs_dir']) / 'demo'
         
-        print(f"PySwiftKit Plugin: Copying WASM files to docs directory...")
-        if docs_dir.exists():
-            shutil.rmtree(docs_dir)
-        shutil.copytree(source_dir, docs_dir)
-        print(f"PySwiftKit Plugin: WASM files available at {docs_dir}")
+        # Copy all demo directories to docs
+        for demo_path, wasm_name in self.demo_dirs:
+            source_dir = self.plugin_dir.parent / demo_path
+            if not source_dir.exists():
+                continue
+            
+            # For docs/* demos, they're already in docs, skip
+            if demo_path.startswith('docs/'):
+                continue
+            
+            # Copy main demo to docs/demo
+            docs_dir = Path(config['docs_dir']) / 'demo'
+            print(f"PySwiftKit Plugin: Copying {demo_path} to docs...")
+            if docs_dir.exists():
+                shutil.rmtree(docs_dir)
+            shutil.copytree(source_dir, docs_dir)
+            print(f"PySwiftKit Plugin: WASM files available at {docs_dir}")
+
         
     def on_files(self, files, config):
         """
@@ -94,50 +97,57 @@ class PySwiftKitDemoPlugin(BasePlugin):
         Copy WASM files to the output directory after build.
         Also set up a custom server handler for gzip compression.
         """
-        if not self.wasm_file.exists() and not self.wasm_gz_file.exists():
-            return
-        
-        # Copy demo directory to site output
         import shutil
-        source_dir = self.plugin_dir.parent / 'demo'
         site_dir = Path(config['site_dir'])
-        output_dir = site_dir / 'demo'
         
-        print(f"PySwiftKit Plugin: Copying WASM files from {source_dir} to {output_dir}")
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
-        shutil.copytree(source_dir, output_dir)
+        # Copy all demo directories to site output
+        for demo_path, wasm_name in self.demo_dirs:
+            source_dir = self.plugin_dir.parent / demo_path
+            if not source_dir.exists():
+                continue
+            
+            # Determine output path
+            if demo_path.startswith('docs/'):
+                # docs/swift-to-python -> site/swift-to-python
+                rel_path = demo_path[5:]  # Remove 'docs/' prefix
+                output_dir = site_dir / rel_path
+            else:
+                # demo -> site/demo
+                output_dir = site_dir / demo_path
+            
+            print(f"PySwiftKit Plugin: Copying {demo_path} to {output_dir}")
+            if output_dir.exists():
+                shutil.rmtree(output_dir)
+            shutil.copytree(source_dir, output_dir)
+            
+            # Check if gzip compressed version exists
+            wasm_gz = output_dir / f'{wasm_name}.wasm.gz'
+            if wasm_gz.exists():
+                size_mb = wasm_gz.stat().st_size / 1024 / 1024
+                print(f"   ✅ {wasm_name}: {size_mb:.1f}MB (gzip compressed)")
         
-        # Check if gzip compressed version exists
-        wasm_gz = output_dir / 'PySwiftKitDemo.wasm.gz'
-        if wasm_gz.exists():
-            print(f"PySwiftKit Plugin: Gzip compressed WASM available ({wasm_gz.stat().st_size / 1024 / 1024:.1f}MB)")
-            print(f"   Tip: Browsers will automatically decompress .gz files")
-        
-        print(f"PySwiftKit Plugin: WASM files copied successfully")
+        print(f"PySwiftKit Plugin: All WASM files copied successfully")
+
     
     def on_serve(self, server, config, builder):
         """
         Hook into the development server to add Brotli support.
-        Also watch the demo directory for changes.
+        Also watch the demo directories for changes.
         """
-        print(f"PySwiftKit Plugin: on_serve called with server type: {type(server)}")
+        # Watch all demo directories for changes
+        for demo_path, _ in self.demo_dirs:
+            demo_dir = self.plugin_dir.parent / demo_path
+            if demo_dir.exists():
+                try:
+                    server.watch(str(demo_dir))
+                except Exception as e:
+                    print(f"PySwiftKit Plugin: Failed to watch {demo_dir}: {e}")
         
-        # Watch the demo directory for changes
-        demo_dir = self.plugin_dir.parent / 'demo'
+        # Watch templates directory
         templates_dir = self.plugin_dir.parent / 'templates'
-        
-        if demo_dir.exists():
-            try:
-                server.watch(str(demo_dir))
-                print(f"PySwiftKit Plugin: Watching {demo_dir} for changes")
-            except Exception as e:
-                print(f"PySwiftKit Plugin: Failed to watch {demo_dir}: {e}")
-        
         if templates_dir.exists():
             try:
                 server.watch(str(templates_dir))
-                print(f"PySwiftKit Plugin: Watching {templates_dir} for changes")
             except Exception as e:
                 print(f"PySwiftKit Plugin: Failed to watch {templates_dir}: {e}")
         

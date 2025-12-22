@@ -180,6 +180,9 @@ struct PySwiftKitDemoApp {
     }
     
     static func setupSwiftToPythonModels() {
+        // Check for URL parameter first
+        let urlCode = getCodeFromURL()
+        
         // Default Swift code with PySwiftKit decorators
         let defaultSwiftCode = """
 import PySwiftKit
@@ -220,8 +223,11 @@ class Person {
 }
 """
         
+        // Use URL code if available, otherwise use default
+        let initialCode = urlCode ?? defaultSwiftCode
+        
         // Create models
-        guard let inputModel = MonacoModel.create(value: defaultSwiftCode, language: "swift"),
+        guard let inputModel = MonacoModel.create(value: initialCode, language: "swift"),
               let outputModel = MonacoModel.create(value: "# Generated Python API will appear here...", language: "python") else {
             return
         }
@@ -230,10 +236,11 @@ class Person {
         inputModel.onDidChangeContent { newContent in
             let pythonOutput = generatePythonStub(from: newContent)
             outputModel.setValue(pythonOutput)
+            // Don't update URL here - too frequent, causes issues
         }
         
         // Generate initial output
-        let initialPython = generatePythonStub(from: defaultSwiftCode)
+        let initialPython = generatePythonStub(from: initialCode)
         outputModel.setValue(initialPython)
         
         swiftToPythonModels = (inputModel, outputModel)
@@ -242,6 +249,9 @@ class Person {
         if let leftEditor = leftEditor {
             CompletionProvider.setupCompletionProviders(swiftEditor: leftEditor)
         }
+        
+        // Setup share button
+        setupShareButton()
     }
     
     static func setupPythonToSwiftModels() {
@@ -450,5 +460,108 @@ class PyDataModel:
                 }
             }
         }
+    }
+}
+
+// MARK: - URL Code Sharing
+
+extension PySwiftKitDemoApp {
+    /// Get code from URL parameter (LZ-compressed)
+    static func getCodeFromURL() -> String? {
+        // Safety check - make sure LZString is loaded
+        guard JSObject.global.LZString.jsValue != .undefined,
+              let lzString = JSObject.global.LZString.object else {
+            return nil
+        }
+        
+        // Get URL search params directly from location.search
+        let searchString = JSObject.global.location.search.string ?? ""
+        if searchString.isEmpty || !searchString.contains("code=") {
+            return nil
+        }
+        
+        // Parse manually to avoid URLSearchParams issues
+        let params = searchString.dropFirst() // Remove leading '?'
+        let pairs = params.split(separator: "&")
+        var codeStr: String?
+        
+        for pair in pairs {
+            let parts = pair.split(separator: "=", maxSplits: 1)
+            if parts.count == 2 && parts[0] == "code" {
+                codeStr = String(parts[1])
+                break
+            }
+        }
+        
+        guard let code = codeStr else {
+            return nil
+        }
+        
+        // Decompress using LZ-String
+        if let decompressFn = lzString.decompressFromEncodedURIComponent.function {
+            let result = decompressFn(code)
+            return result.string
+        }
+        
+        return nil
+    }
+    
+    /// Setup share button
+    static func setupShareButton() {
+        let document = JSObject.global.document
+        
+        // Find the tabs container - keep it as JSValue, not .object
+        let tabsContainer = document.querySelector(".tabs")
+        guard tabsContainer.jsValue != .undefined,
+              tabsContainer.jsValue != .null else {
+            return
+        }
+        
+        // Create share button
+        let shareBtn = document.createElement("button")
+        _ = shareBtn.classList.add("tab")
+        shareBtn.textContent = "📋 Share"
+        shareBtn.title = "Copy shareable link to clipboard"
+        shareBtn.style = "margin-left: auto;"
+        
+        // Add click handler
+        let closure = JSClosure { _ in
+            guard let models = swiftToPythonModels,
+                  JSObject.global.LZString.jsValue != .undefined,
+                  let lzString = JSObject.global.LZString.object,
+                  let compressFn = lzString.compressToEncodedURIComponent.function else {
+                return .undefined
+            }
+            
+            let code = models.input.getValue()
+            let compressed = compressFn(code)
+            
+            guard let compressedStr = compressed.string else {
+                return .undefined
+            }
+            
+            let origin = JSObject.global.location.origin.string ?? ""
+            let pathname = JSObject.global.location.pathname.string ?? ""
+            let shareURL = "\(origin)\(pathname)?code=\(compressedStr)"
+            
+            // Copy to clipboard - use direct member lookup like appendChild
+            _ = JSObject.global.navigator.clipboard.writeText(shareURL)
+            
+            // Show feedback
+            let originalText = shareBtn.textContent.string ?? "📋 Share"
+            shareBtn.textContent = "✅ Copied!"
+            
+            _ = JSObject.global.setTimeout!(JSClosure { _ in
+                shareBtn.textContent = .string(originalText)
+                return .undefined
+            }, 2000)
+            
+            return .undefined
+        }
+        
+        _ = shareBtn.addEventListener("click", closure)
+        
+        // Append to tabs - use the same pattern as setupKivyModeCheckbox
+        _ = tabsContainer.appendChild(shareBtn)
     }
 }

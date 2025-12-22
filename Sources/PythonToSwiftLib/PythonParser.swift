@@ -210,9 +210,14 @@ public enum PythonToSwiftGenerator {
         }
         
         // Add blank line before first member if members exist
-        if !members.isEmpty {
-            members[0].leadingTrivia = .newline
-        }
+        // if !members.isEmpty {
+        //     members[0].leadingTrivia = .newlines(2)
+        // }
+        
+        // if var first = members.first {
+        //     first.decl = first.decl.with(\.leadingTrivia, .newlines(2))
+        //     members[0] = first
+        // }
         
         return ClassDeclSyntax(
             attributes: AttributeListSyntax {
@@ -231,7 +236,7 @@ public enum PythonToSwiftGenerator {
             classKeyword: .keyword(.class, trailingTrivia: .space),
             name: .identifier(classInfo.name, trailingTrivia: .space),
             memberBlock: MemberBlockSyntax(
-                leftBrace: .leftBraceToken(leadingTrivia: .space),
+                leftBrace: .leftBraceToken(leadingTrivia: .space, trailingTrivia: .newlines(4)),
                 members: MemberBlockItemListSyntax(members),
                 rightBrace: .rightBraceToken(leadingTrivia: .newline)
             )

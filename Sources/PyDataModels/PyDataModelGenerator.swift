@@ -123,8 +123,7 @@ public enum PyDataModelGenerator {
                         type: PythonTypeConverter.convertToSwiftType(returnType)
                     )
                 }
-            ),
-            body: CodeBlockSyntax(statements: CodeBlockItemListSyntax())
+            )
         )
     }
     

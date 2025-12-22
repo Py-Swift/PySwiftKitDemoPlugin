@@ -15,4 +15,8 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Demo: demo.md
+  - Interactive Demos:
+    - Multi-Tool Demo: demo.md
+    - Swift to Python: swift-to-python.md
+    - Python to Swift: python-to-swift.md
+    - Python DataModel: python-datamodel.md
