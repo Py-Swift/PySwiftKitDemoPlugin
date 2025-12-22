@@ -1,5 +1,5 @@
 {
-  "originHash" : "3da87563c3e249e3a812c398df09af21cd8bacb2534f416308802bf42073711f",
+  "originHash" : "e239f3d45ba78be7c407c9c22bdd6ac8dd44815eca9b7ea4f7df53743dbea65c",
   "pins" : [
     {
       "identity" : "javascriptkit",
@@ -44,6 +44,15 @@
       "state" : {
         "revision" : "f99ae8aa18f0cf0d53481901f88a0991dc3bd4a2",
         "version" : "601.0.1"
+      }
+    },
+    {
+      "identity" : "swiftykvlang",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Py-Swift/SwiftyKvLang",
+      "state" : {
+        "branch" : "master",
+        "revision" : "ab1185cc44ec8c1576fa358f91753efdf55dc540"
       }
     }
   ],

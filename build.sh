@@ -14,9 +14,9 @@ echo "Using Swift 6.2.1 with WASM SDK..."
 $SWIFT_BIN --version
 
 # Define all products to build
-declare -a PRODUCTS=("PySwiftKitDemo" "SwiftToPythonDemo" "PythonToSwiftDemo" "PyDataModelDemo")
-declare -a OUTPUT_DIRS=("$DEMO_DIR" "docs/swift-to-python" "docs/python-to-swift" "docs/python-datamodel")
-declare -a HTML_TEMPLATES=("templates/index.html" "templates/swift-to-python.html" "templates/python-to-swift.html" "templates/python-datamodel.html")
+declare -a PRODUCTS=("PySwiftKitDemo" "SwiftToPythonDemo" "PythonToSwiftDemo" "PyDataModelDemo" "KvAstTree")
+declare -a OUTPUT_DIRS=("$DEMO_DIR" "docs/swift-to-python" "docs/python-to-swift" "docs/python-datamodel" "docs/kv-ast-tree")
+declare -a HTML_TEMPLATES=("templates/index.html" "templates/swift-to-python.html" "templates/python-to-swift.html" "templates/python-datamodel.html" "templates/kv-ast-tree.html")
 
 # Build each product
 for i in "${!PRODUCTS[@]}"; do

@@ -24,6 +24,10 @@ let package = Package(
             name: "PyDataModelDemo",
             targets: ["PyDataModelDemo"]
         ),
+        .executable(
+            name: "KvAstTree",
+            targets: ["KvAstTree"]
+        ),
         .library(
             name: "PythonToSwiftLib",
             targets: ["PythonToSwiftLib"]
@@ -44,6 +48,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/swiftwasm/JavaScriptKit", from: "0.19.0"),
         .package(url: "https://github.com/Py-Swift/PySwiftAST", branch: "master"),
+        .package(url: "https://github.com/Py-Swift/SwiftyKvLang", branch: "master"),
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "601.0.0"),
     ],
     targets: [
@@ -123,6 +128,14 @@ let package = Package(
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
             ],
             path: "Sources/PyDataModelDemo"
+        ),
+        .executableTarget(
+            name: "KvAstTree",
+            dependencies: [
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+                .product(name: "KvParser", package: "SwiftyKvLang"),
+            ],
+            path: "Sources/KvAstTree"
         ),
         .executableTarget(
             name: "ParserTest",
