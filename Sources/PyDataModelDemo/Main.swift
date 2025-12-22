@@ -264,9 +264,9 @@ class PyDataModel:
     static func setupShareButton(leftEditor: JSObject) {
         let document = JSObject.global.document
         
-        let tabsContainer = document.querySelector(".header-actions")
-        guard tabsContainer.jsValue != .undefined,
-              tabsContainer.jsValue != .null else {
+        let actionsContainer = document.querySelector(".header-actions")
+        guard actionsContainer.jsValue != .undefined,
+              actionsContainer.jsValue != .null else {
             return
         }
         
@@ -307,6 +307,6 @@ class PyDataModel:
         }
         
         _ = shareBtn.addEventListener("click", closure)
-        _ = tabsContainer.appendChild(shareBtn)
+        _ = actionsContainer.appendChild(shareBtn)
     }
 }
