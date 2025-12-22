@@ -23,36 +23,40 @@
         
         header {
             background: #252526;
-            padding: 0.5rem 1rem 0;
+            padding: 0.75rem 1rem;
             border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
         
-        .tabs {
+        header h1 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #cccccc;
+        }
+        
+        .header-actions {
             display: flex;
             gap: 0.5rem;
         }
         
-        .tab {
-            padding: 0.5rem 1rem;
-            background: transparent;
+        .share-btn {
+            padding: 0.4rem 1rem;
+            background: #0e639c;
+            color: white;
             border: none;
-            color: #858585;
+            border-radius: 3px;
             cursor: pointer;
             font-size: 0.9rem;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
+            transition: background 0.2s;
         }
         
-        .tab:hover {
-            color: #cccccc;
+        .share-btn:hover {
+            background: #1177bb;
         }
         
-        .tab.active {
-            color: #cccccc;
-            border-bottom-color: #007acc;
-        }
-        
-        .tab-content {
+        #editor-container {
             flex: 1;
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -61,7 +65,7 @@
             overflow: hidden;
         }
         
-        .tab-content.three-column {
+        #editor-container.three-column {
             grid-template-columns: 1fr 1fr 1fr;
         }
         
@@ -126,12 +130,11 @@
 </head>
 <body>
     <header>
-        <div class="tabs">
-            <button class="tab active">Python → Swift Container</button>
-        </div>
+        <h1>Python DataModel - PySwiftKit Container Generator</h1>
+        <div class="header-actions"></div>
     </header>
     
-    <div id="editor-container" class="tab-content">
+    <div id="editor-container">
         <div id="panel-left" class="editor-panel">
             <div id="panel-left-header" class="panel-header">
                 <span class="panel-header-title">Python Data Model</span>
