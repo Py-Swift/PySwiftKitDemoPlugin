@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python DataModel - PySwiftKit Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: #252526;
+            padding: 0.5rem 1rem 0;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: #858585;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: #cccccc;
+        }
+        
+        .tab.active {
+            color: #cccccc;
+            border-bottom-color: #007acc;
+        }
+        
+        .tab-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: #3e3e42;
+            overflow: hidden;
+        }
+        
+        .tab-content.three-column {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+        
+        .editor-panel {
+            background: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-panel.hidden {
+            display: none;
+        }
+        
+        .panel-header {
+            background: #252526;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .panel-header-title {
+            flex: 1;
+        }
+        
+        .panel-header-options {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+            color: #cccccc;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            cursor: pointer;
+        }
+        
+        .editor-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #editor-left, #editor-middle, #editor-right {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="tabs">
+            <button class="tab active">Python → Swift Container</button>
+        </div>
+    </header>
+    
+    <div id="editor-container" class="tab-content">
+        <div id="panel-left" class="editor-panel">
+            <div id="panel-left-header" class="panel-header">
+                <span class="panel-header-title">Python Data Model</span>
+                <div id="panel-left-options" class="panel-header-options"></div>
+            </div>
+            <div class="editor-container">
+                <div id="editor-left"></div>
+            </div>
+        </div>
+        
+        <div id="panel-middle" class="editor-panel hidden">
+            <div id="panel-middle-header" class="panel-header">
+                <span class="panel-header-title">Kivy EventDispatcher (Read-only)</span>
+            </div>
+            <div class="editor-container">
+                <div id="editor-middle"></div>
+            </div>
+        </div>
+        
+        <div id="panel-right" class="editor-panel">
+            <div id="panel-right-header" class="panel-header">
+                <span class="panel-header-title">Generated Swift Container (Read-only)</span>
+            </div>
+            <div class="editor-container">
+                <div id="editor-right"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    
+    <script type="module">
+        import { init } from './index.js';
+        
+        // Load Monaco Editor
+        require.config({ 
+            paths: { 
+                'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+            } 
+        });
+        
+        require(['vs/editor/editor.main'], async function() {
+            // Make monaco globally accessible before Swift initializes
+            window.monaco = monaco;
+            
+            // Wait a bit to ensure monaco is fully ready
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            try {
+                // Initialize Swift WASM - this will call setupEditor() via @main
+                const swift = await init();
+                
+            } catch (error) {
+                console.error('Failed to initialize Swift WASM:', error);
+            }
+        });
+    </script>
+</body>
+</html>
