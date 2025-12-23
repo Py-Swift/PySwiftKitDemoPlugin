@@ -17,7 +17,8 @@ echo ""
 echo ""
 ./build-kv-ast-tree.sh
 echo ""
-./build-kv-syntax-highlight.sh
+./build-kv-swiftui-demo.sh
+echo ""
 
 # Trigger mkdocs reload
 if [ -d "docs" ]; then

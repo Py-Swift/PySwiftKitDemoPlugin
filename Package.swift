@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "PySwiftKitDemoPlugin",
-    platforms: [.macOS(.v10_15)],
+    platforms: [.macOS(.v13)],
     
     products: [
         .executable(
@@ -28,9 +28,21 @@ let package = Package(
             name: "KvAstTree",
             targets: ["KvAstTree"]
         ),
+        .executable(
+            name: "KvSwiftUITest",
+            targets: ["KvSwiftUITest"]
+        ),
+        .executable(
+            name: "KvSwiftUIDemo",
+            targets: ["KvSwiftUIDemo"]
+        ),
         .library(
             name: "KvSyntaxHighlight",
             targets: ["KvSyntaxHighlight"]
+        ),
+        .library(
+            name: "KvSwiftUI",
+            targets: ["KvSwiftUI"]
         ),
         .library(
             name: "PythonToSwiftLib",
@@ -54,6 +66,7 @@ let package = Package(
         .package(url: "https://github.com/Py-Swift/PySwiftAST", branch: "master"),
         .package(url: "https://github.com/Py-Swift/SwiftyKvLang", branch: "master"),
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "601.0.0"),
+        .package(url: "https://github.com/Py-Swift/JavaScriptKitExtensions", branch: "master")
     ],
     targets: [
         .target(
@@ -147,8 +160,36 @@ let package = Package(
             dependencies: [
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
                 .product(name: "KvParser", package: "SwiftyKvLang"),
+                .byName(name: "JavaScriptKitExtensions")
             ],
             path: "Sources/KvSyntaxHighlight"
+        ),
+        .target(
+            name: "KvSwiftUI",
+            dependencies: [
+                .product(name: "KvParser", package: "SwiftyKvLang"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+            ],
+            path: "Sources/KvSwiftUI"
+        ),
+        .executableTarget(
+            name: "KvSwiftUITest",
+            dependencies: [
+                "KvSwiftUI",
+                .product(name: "KvParser", package: "SwiftyKvLang"),
+            ],
+            path: "Sources/KvSwiftUITest"
+        ),
+        .executableTarget(
+            name: "KvSwiftUIDemo",
+            dependencies: [
+                "KvSwiftUI",
+                "KvSyntaxHighlight",
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+                .product(name: "KvParser", package: "SwiftyKvLang"),
+            ],
+            path: "Sources/KvSwiftUIDemo"
         ),
         .executableTarget(
             name: "ParserTest",

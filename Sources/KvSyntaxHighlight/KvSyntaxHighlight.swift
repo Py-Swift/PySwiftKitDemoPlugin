@@ -83,6 +83,27 @@ public struct KvSyntaxHighlight {
                 }
             }
             
+            // Convert byte positions to character positions
+            let characterPositions = relevantTokens.map { token -> Int in
+                // Token.column is 1-based, convert to 0-based character index
+                let byteOffset = token.column - 1
+                guard byteOffset >= 0 else { return 0 }
+                
+                // Count UTF-16 code units up to this byte position
+                var currentByte = 0
+                var charIndex = 0
+                
+                for char in line {
+                    if currentByte >= byteOffset {
+                        break
+                    }
+                    currentByte += char.utf8.count
+                    charIndex += char.utf16.count
+                }
+                
+                return charIndex
+            }
+            
             for (index, kvToken) in relevantTokens.enumerated() {
                 // Check if this identifier is followed by a colon (property definition)
                 let isProperty: Bool
@@ -97,7 +118,7 @@ public struct KvSyntaxHighlight {
                 }
                 
                 monacoTokens.append([
-                    "startIndex": Double(kvToken.column).jsValue,
+                    "startIndex": Double(characterPositions[index]).jsValue,
                     "scopes": mapTokenType(kvToken.type, isProperty: isProperty).jsValue
                 ])
             }

@@ -1,4 +1,5 @@
 import JavaScriptKit
+import JavaScriptKitExtensions
 import KvParser
 import KvSyntaxHighlight
 
@@ -57,13 +58,16 @@ struct KvAstTree {
             return
         }
         
-        let leftOptions = JSObject.global.Object.function!()
-        leftOptions.value = .string(initialCode)
-        leftOptions.language = .string("kv")  // Use KV syntax highlighting
+        let leftOptions = JSObject()
+        leftOptions.value = initialCode
+        leftOptions.language = "kv"  // Use KV syntax highlighting
         leftOptions.theme = .string("vs-dark")
-        leftOptions.automaticLayout = .boolean(true)
-        leftOptions.minimap = JSObject.global.Object.function!()
-        leftOptions.minimap.enabled = .boolean(false)
+        leftOptions.automaticLayout = true
+        leftOptions.minimap = [
+            "enabled": false
+        ]
+        //leftOptions.minimap = JSObject()
+        //leftOptions.minimap.enabled = false
         
         guard let leftEditorObj = editorObj.create.function?(leftContainer, leftOptions).object else {
             print("Failed to create left editor")
@@ -79,19 +83,28 @@ struct KvAstTree {
         
         let initialTree = parseKvLang(from: initialCode)
         
-        let rightOptions = JSObject.global.Object.function!()
-        rightOptions.value = .string(initialTree)
-        rightOptions.language = .string("plaintext")
-        rightOptions.theme = .string("vs-dark")
-        rightOptions.automaticLayout = .boolean(true)
-        rightOptions.minimap = JSObject.global.Object.function!()
-        rightOptions.minimap.enabled = .boolean(false)
-        rightOptions.readOnly = .boolean(true)
+        let rightOptions = JSObject()
+        rightOptions.value = initialTree
+        rightOptions.language = "plaintext"
+        rightOptions.theme = "vs-dark"
+        rightOptions.automaticLayout = true
+        rightOptions.minimap = [
+            "enabled": false
+        ]
+        //rightOptions.minimap.enabled = .boolean(false)
         
-        guard let rightEditorObj = editorObj.create.function?(rightContainer, rightOptions).object else {
+        
+        rightOptions.readOnly = true
+        
+        guard let rightEditorObj  = editorObj.create?(rightContainer, rightOptions).object else {
             print("Failed to create right editor")
             return
         }
+        
+//        guard let rightEditorObj = editorObj.create.function?(rightContainer, rightOptions).object else {
+//            print("Failed to create right editor")
+//            return
+//        }
         rightEditor = rightEditorObj
         
         // Setup change handler
