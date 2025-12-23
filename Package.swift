@@ -29,6 +29,10 @@ let package = Package(
             targets: ["KvAstTree"]
         ),
         .library(
+            name: "KvSyntaxHighlight",
+            targets: ["KvSyntaxHighlight"]
+        ),
+        .library(
             name: "PythonToSwiftLib",
             targets: ["PythonToSwiftLib"]
         ),
@@ -132,10 +136,19 @@ let package = Package(
         .executableTarget(
             name: "KvAstTree",
             dependencies: [
+                "KvSyntaxHighlight",
                 .product(name: "JavaScriptKit", package: "JavaScriptKit"),
                 .product(name: "KvParser", package: "SwiftyKvLang"),
             ],
             path: "Sources/KvAstTree"
+        ),
+        .target(
+            name: "KvSyntaxHighlight",
+            dependencies: [
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+                .product(name: "KvParser", package: "SwiftyKvLang"),
+            ],
+            path: "Sources/KvSyntaxHighlight"
         ),
         .executableTarget(
             name: "ParserTest",

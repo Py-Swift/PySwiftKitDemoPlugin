@@ -1,5 +1,6 @@
 import JavaScriptKit
 import KvParser
+import KvSyntaxHighlight
 
 @main
 struct KvAstTree {
@@ -19,6 +20,9 @@ struct KvAstTree {
             print("Monaco editor not available")
             return
         }
+        
+        // Register KV language syntax highlighting
+        KvSyntaxHighlight.register()
         
         // Check for URL parameter first
         let urlCode = getCodeFromURL()
@@ -55,7 +59,7 @@ struct KvAstTree {
         
         let leftOptions = JSObject.global.Object.function!()
         leftOptions.value = .string(initialCode)
-        leftOptions.language = .string("yaml")  // KV lang is similar to YAML
+        leftOptions.language = .string("kv")  // Use KV syntax highlighting
         leftOptions.theme = .string("vs-dark")
         leftOptions.automaticLayout = .boolean(true)
         leftOptions.minimap = JSObject.global.Object.function!()
@@ -126,7 +130,7 @@ struct KvAstTree {
             let module = try parser.parse()
             
             // Return tree description
-            return module.treeDescription()
+            return module.detailedTreeDescription()
         } catch {
             return "Error: \(error)"
         }
