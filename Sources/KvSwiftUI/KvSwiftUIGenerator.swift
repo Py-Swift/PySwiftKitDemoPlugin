@@ -52,6 +52,12 @@ public struct KvSwiftUIGenerator {
         results.append("import SwiftUI")
         results.append("")
         
+        // Generate rules first (these become View structs)
+        for rule in module.rules {
+            results.append(generateViewStructFromRule(rule))
+            results.append("")
+        }
+        
         // Generate code for root widget if present
         if let root = module.root {
             // Check if root is a built-in layout/container widget
@@ -64,10 +70,63 @@ public struct KvSwiftUIGenerator {
             }
         }
         
-        // Generate rules as reusable view modifiers or styles
-        // (For now, we'll skip rules and focus on root widget generation)
-        
         return results.joined(separator: "\n")
+    }
+    
+    /// Generate a View struct from a KV rule
+    private func generateViewStructFromRule(_ rule: KvRule) -> String {
+        let structName = rule.selector.primaryName
+        
+        var lines: [String] = []
+        
+        if config.includeComments {
+            lines.append("// Generated from KV rule: <\(structName)>")
+        }
+        
+        lines.append("struct \(structName): View {")
+        
+        // Generate @State properties if needed
+        if config.generateStateProperties {
+            var stateProps: [String] = []
+            var usedNames = Set<String>()
+            
+            // Collect from rule's children
+            for child in rule.children {
+                collectStateProperties(from: child, into: &stateProps, usedNames: &usedNames)
+            }
+            
+            if !stateProps.isEmpty {
+                lines.append("")
+                for prop in stateProps {
+                    lines.append("    \(prop)")
+                }
+            }
+        }
+        
+        lines.append("")
+        lines.append("    var body: some View {")
+        
+        // Generate content - if there's only one child, use it directly
+        // Otherwise wrap in a Group or the first child if it's a layout
+        if rule.children.count == 1 {
+            let childCode = generateViewExpression(for: rule.children[0], indent: 2)
+            lines.append(childCode)
+        } else if rule.children.isEmpty {
+            lines.append("        EmptyView()")
+        } else {
+            // Multiple children - wrap in VStack
+            lines.append("        VStack {")
+            for child in rule.children {
+                let childCode = generateViewExpression(for: child, indent: 3)
+                lines.append(childCode)
+            }
+            lines.append("        }")
+        }
+        
+        lines.append("    }")
+        lines.append("}")
+        
+        return lines.joined(separator: "\n")
     }
     
     /// Check if widget is a built-in layout container that shouldn't be wrapped in a struct
@@ -200,17 +259,20 @@ public struct KvSwiftUIGenerator {
             return "Button(\(textValue))"
             
         case "TextInput":
-            return "TextField(\"Input\", text: $text)"
+            let propName = widget.id.map { "\($0)_text" } ?? "text"
+            return "TextField(\"Input\", text: $\(propName))"
             
         case "Image":
             let source = widget.properties.first(where: { $0.name == "source" })?.value ?? "\"image\""
             return "Image(\(source))"
             
         case "Slider":
-            return "Slider(value: $value)"
+            let propName = widget.id.map { "\($0)_value" } ?? "value"
+            return "Slider(value: $\(propName))"
             
         case "Switch":
-            return "Toggle(\"Switch\", isOn: $isOn)"
+            let propName = widget.id.map { "\($0)_isOn" } ?? "isOn"
+            return "Toggle(\"Switch\", isOn: $\(propName))"
             
         case "ProgressBar":
             return "ProgressView(value: progress)"
@@ -374,22 +436,34 @@ public struct KvSwiftUIGenerator {
     
     /// Recursively collect state properties from widget and its children
     private func collectStateProperties(from widget: KvWidget, into stateProps: inout [String], usedNames: inout Set<String>) {
+        // Generate state property name based on widget id if available
+        let propertyPrefix = widget.id.map { "\($0)_" } ?? ""
+        
         // Check if we need text binding
-        if widget.name == "TextInput" && !usedNames.contains("text") {
-            stateProps.append("@State private var text: String = \"\"")
-            usedNames.insert("text")
+        if widget.name == "TextInput" {
+            let propName = "\(propertyPrefix)text"
+            if !usedNames.contains(propName) {
+                stateProps.append("@State private var \(propName): String = \"\"")
+                usedNames.insert(propName)
+            }
         }
         
         // Check if we need value binding
-        if widget.name == "Slider" && !usedNames.contains("value") {
-            stateProps.append("@State private var value: Double = 0.5")
-            usedNames.insert("value")
+        if widget.name == "Slider" {
+            let propName = "\(propertyPrefix)value"
+            if !usedNames.contains(propName) {
+                stateProps.append("@State private var \(propName): Double = 0.5")
+                usedNames.insert(propName)
+            }
         }
         
         // Check if we need toggle binding
-        if widget.name == "Switch" && !usedNames.contains("isOn") {
-            stateProps.append("@State private var isOn: Bool = false")
-            usedNames.insert("isOn")
+        if widget.name == "Switch" {
+            let propName = "\(propertyPrefix)isOn"
+            if !usedNames.contains(propName) {
+                stateProps.append("@State private var \(propName): Bool = false")
+                usedNames.insert(propName)
+            }
         }
         
         // Check for dynamic size properties

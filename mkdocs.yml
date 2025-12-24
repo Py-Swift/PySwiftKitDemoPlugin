@@ -22,3 +22,4 @@ nav:
     - Python DataModel: python-datamodel.md
     - KV AST Tree: kv-ast-tree.md
     - KV to SwiftUI: kv-swiftui.md
+    - KV to DataModel: kv-datamodel.md

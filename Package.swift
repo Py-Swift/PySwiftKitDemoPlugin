@@ -36,6 +36,10 @@ let package = Package(
             name: "KvSwiftUIDemo",
             targets: ["KvSwiftUIDemo"]
         ),
+        .executable(
+            name: "KvToDataModelDemo",
+            targets: ["KvToDataModelDemo"]
+        ),
         .library(
             name: "KvSyntaxHighlight",
             targets: ["KvSyntaxHighlight"]
@@ -190,6 +194,16 @@ let package = Package(
                 .product(name: "KvParser", package: "SwiftyKvLang"),
             ],
             path: "Sources/KvSwiftUIDemo"
+        ),
+        .executableTarget(
+            name: "KvToDataModelDemo",
+            dependencies: [
+                "KvSyntaxHighlight",
+                "PyDataModels",
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+                .product(name: "KvParser", package: "SwiftyKvLang"),
+            ],
+            path: "Sources/KvToDataModelDemo"
         ),
         .executableTarget(
             name: "ParserTest",
