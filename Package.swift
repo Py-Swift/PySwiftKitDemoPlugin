@@ -40,6 +40,10 @@ let package = Package(
             name: "KvToDataModelDemo",
             targets: ["KvToDataModelDemo"]
         ),
+        .executable(
+            name: "KvToPyClassDemo",
+            targets: ["KvToPyClassDemo"]
+        ),
         .library(
             name: "KvSyntaxHighlight",
             targets: ["KvSyntaxHighlight"]
@@ -115,6 +119,16 @@ let package = Package(
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
             ],
             path: "Sources/PyDataModels"
+        ),
+        .target(
+            name: "KvToPyClass",
+            dependencies: [
+                .product(name: "KvParser", package: "SwiftyKvLang"),
+                .product(name: "PySwiftAST", package: "PySwiftAST"),
+                .product(name: "PySwiftCodeGen", package: "PySwiftAST"),
+                .product(name: "PyFormatters", package: "PySwiftAST"),
+            ],
+            path: "KvToPyClass/Sources/KvToPyClass"
         ),
         .executableTarget(
             name: "PySwiftKitDemo",
@@ -204,6 +218,17 @@ let package = Package(
                 .product(name: "KvParser", package: "SwiftyKvLang"),
             ],
             path: "Sources/KvToDataModelDemo"
+        ),
+        .executableTarget(
+            name: "KvToPyClassDemo",
+            dependencies: [
+                "KvSyntaxHighlight",
+                "KvToPyClass",
+                .product(name: "JavaScriptKit", package: "JavaScriptKit"),
+                .product(name: "JavaScriptKitExtensions", package: "JavaScriptKitExtensions"),
+                .product(name: "KvParser", package: "SwiftyKvLang"),
+            ],
+            path: "Sources/KvToPyClassDemo"
         ),
         .executableTarget(
             name: "ParserTest",

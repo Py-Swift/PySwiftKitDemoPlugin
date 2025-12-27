@@ -1,5 +1,5 @@
 {
-  "originHash" : "ea7b031160098bb2305c37df5fabf2dba8ee80d57b914cd284617da92f2a8687",
+  "originHash" : "5eb7615f1675fc235b12f8c294de1bccc04eb3f903bb3cda406a1400bfaef225",
   "pins" : [
     {
       "identity" : "javascriptkit",
@@ -25,7 +25,7 @@
       "location" : "https://github.com/Py-Swift/PySwiftAST",
       "state" : {
         "branch" : "master",
-        "revision" : "8ba8b3c4c058af329d88f67bf0083360c0ef3745"
+        "revision" : "9c6af68882d5d9f352bbba7b60baa16b717b0219"
       }
     },
     {
@@ -61,7 +61,7 @@
       "location" : "https://github.com/Py-Swift/SwiftyKvLang",
       "state" : {
         "branch" : "master",
-        "revision" : "b9eb8ac5544156a66ddc336d1f01d31c01448479"
+        "revision" : "ac8ad871d0e2418bb977bf199ed7a041bf9148dd"
       }
     }
   ],

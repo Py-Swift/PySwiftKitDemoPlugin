@@ -49,6 +49,7 @@ class PySwiftKitDemoPlugin(BasePlugin):
             ('docs/kv-ast-tree', 'KvAstTree'),
             ('docs/kv-swiftui', 'KvSwiftUIDemo'),
             ('docs/kv-datamodel', 'KvToDataModelDemo'),
+            ('docs/kv-to-pyclass', 'KvToPyClassDemo'),
         ]
         
         # Add demo directories to watch list for live reload

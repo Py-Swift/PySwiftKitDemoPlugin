@@ -19,6 +19,10 @@ echo ""
 echo ""
 ./build-kv-swiftui-demo.sh
 echo ""
+./build-kv-datamodel-demo.sh
+echo ""
+./build-kv-to-pyclass.sh
+echo ""
 
 # Trigger mkdocs reload
 if [ -d "docs" ]; then
