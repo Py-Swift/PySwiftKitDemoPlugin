@@ -121,8 +121,14 @@ let package = Package(
             path: "Sources/PyDataModels"
         ),
         .target(
+            name: "KivyWidgetRegistry",
+            dependencies: [],
+            path: "KvToPyClass/Sources/KivyWidgetRegistry"
+        ),
+        .target(
             name: "KvToPyClass",
             dependencies: [
+                "KivyWidgetRegistry",
                 .product(name: "KvParser", package: "SwiftyKvLang"),
                 .product(name: "PySwiftAST", package: "PySwiftAST"),
                 .product(name: "PySwiftCodeGen", package: "PySwiftAST"),
