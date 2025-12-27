@@ -1,8 +1,14 @@
+import Foundation
 import JavaScriptKit
 import JavaScriptKitExtensions
 import KvParser
 import KvSyntaxHighlight
 import KvToPyClass
+
+struct ShareData: Codable {
+    let kv: String
+    let py: String
+}
 
 @main
 struct KvToPyClassDemo {
@@ -235,28 +241,26 @@ class UserProfile(BoxLayout):
         }
         
         let params = searchString.dropFirst()
-        let pairs = params.split(separator: "&")
-        var kvCode: String?
-        var pythonCode: String?
+        let pairs = params.split(separator: "=", maxSplits: 1)
         
-        for pair in pairs {
-            let parts = pair.split(separator: "=", maxSplits: 1)
-            if parts.count == 2 {
-                let key = String(parts[0])
-                let value = String(parts[1])
-                
-                if key == "kv", let decompressFn = lzString.decompressFromEncodedURIComponent.function {
-                    kvCode = decompressFn(value).string
-                } else if key == "python", let decompressFn = lzString.decompressFromEncodedURIComponent.function {
-                    pythonCode = decompressFn(value).string
-                }
-            }
+        guard pairs.count == 2,
+              String(pairs[0]) == "code",
+              let decompressFn = lzString.decompressFromEncodedURIComponent.function else {
+            return nil
         }
         
-        if let kv = kvCode, let python = pythonCode {
-            return (kv, python)
+        let compressed = String(pairs[1])
+        guard let decompressed = decompressFn(compressed).string else {
+            return nil
         }
-        return nil
+        
+        // Parse JSON: {"kv": "...", "py": "..."}
+        guard let jsonData = decompressed.data(using: .utf8),
+              let shareData = try? JSONDecoder().decode(ShareData.self, from: jsonData) else {
+            return nil
+        }
+        
+        return (kv: shareData.kv, python: shareData.py)
     }
     
     static func setupShareButton(kvEditor: JSObject, pythonEditor: JSObject) {
@@ -283,17 +287,21 @@ class UserProfile(BoxLayout):
             let kvCode = kvEditor.getValue!().string ?? ""
             let pythonCode = pythonEditor.getValue!().string ?? ""
             
-            let kvCompressed = compressFn(kvCode)
-            let pythonCompressed = compressFn(pythonCode)
+            // Create JSON: {"kv": "...", "py": "..."}
+            let shareData = ShareData(kv: kvCode, py: pythonCode)
+            guard let jsonData = try? JSONEncoder().encode(shareData),
+                  let jsonString = String(data: jsonData, encoding: .utf8) else {
+                return .undefined
+            }
             
-            guard let kvStr = kvCompressed.string,
-                  let pythonStr = pythonCompressed.string else {
+            let compressed = compressFn(jsonString)
+            guard let compressedStr = compressed.string else {
                 return .undefined
             }
             
             let origin = JSObject.global.location.origin.string ?? ""
             let pathname = JSObject.global.location.pathname.string ?? ""
-            let shareURL = "\(origin)\(pathname)?kv=\(kvStr)&python=\(pythonStr)"
+            let shareURL = "\(origin)\(pathname)?code=\(compressedStr)"
             
             _ = JSObject.global.navigator.clipboard.writeText(shareURL)
             
