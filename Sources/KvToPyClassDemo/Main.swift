@@ -129,7 +129,7 @@ class UserProfile(BoxLayout):
         kvOptions.automaticLayout = true
         kvOptions.minimap = ["enabled": false]
         
-        guard let kvEditorObj = editorObj.create.function?(kvContainer, kvOptions).object else {
+        guard let kvEditorObj = editorObj.create?(kvContainer, kvOptions).object else {
             print("Failed to create KV editor")
             return
         }

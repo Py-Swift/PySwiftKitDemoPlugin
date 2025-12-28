@@ -1,5 +1,5 @@
 {
-  "originHash" : "5eb7615f1675fc235b12f8c294de1bccc04eb3f903bb3cda406a1400bfaef225",
+  "originHash" : "99e18f9e32668824538cd6f92abdd0bc63232630e8ca87a4421818811cfa94a2",
   "pins" : [
     {
       "identity" : "javascriptkit",
@@ -61,7 +61,7 @@
       "location" : "https://github.com/Py-Swift/SwiftyKvLang",
       "state" : {
         "branch" : "master",
-        "revision" : "f2ae54881ecbe6d92fbad352ac141795a0784d42"
+        "revision" : "f4270646e5bb259f4cf685716cbde89bedb59773"
       }
     }
   ],
