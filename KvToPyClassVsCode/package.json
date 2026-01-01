@@ -1,0 +1,149 @@
+{
+  "name": "kv-to-pyclass",
+  "displayName": "KV to PyClass",
+  "description": "Generate Python classes from Kivy KV language files",
+  "version": "0.1.0",
+  "publisher": "pyswiftkit",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters"
+  ],
+  "keywords": [
+    "kivy",
+    "kv",
+    "python",
+    "code generation"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kvExplorer",
+          "title": "KV Explorer",
+          "icon": "$(symbol-class)"
+        }
+      ]
+    },
+    "views": {
+      "kvExplorer": [
+        {
+          "id": "kvFilesView",
+          "name": "KV Files"
+        },
+        {
+          "id": "kvWidgetsView",
+          "name": "KV Widgets",
+          "type": "tree"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "kv",
+        "aliases": [
+          "SwiftyKv Language",
+          "KV",
+          "kv"
+        ],
+        "extensions": [
+          ".kv"
+        ],
+        "firstLine": "^<[A-Z][a-zA-Z0-9_]*(@[A-Z][a-zA-Z0-9_]*)?>:",
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "kv",
+        "scopeName": "source.kv",
+        "path": "./syntaxes/kv.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "kvToPyClass.generatePythonClass",
+        "title": "KV: Generate Python Class",
+        "icon": "$(symbol-class)"
+      },
+      {
+        "command": "kvToPyClass.showPreview",
+        "title": "KV: Show Preview Panel",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "kvToPyClass.toggleAutoGenerate",
+        "title": "KV: Toggle Auto-Generate"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "kvToPyClass.showPreview",
+          "when": "resourceLangId == kv",
+          "group": "navigation"
+        },
+        {
+          "command": "kvToPyClass.generatePythonClass",
+          "when": "resourceLangId == kv",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "kvToPyClass.generatePythonClass",
+          "when": "resourceLangId == kv"
+        },
+        {
+          "command": "kvToPyClass.showPreview",
+          "when": "resourceLangId == kv"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "KV to PyClass",
+      "properties": {
+        "kvToPyClass.autoGenerate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically generate Python classes when KV or Python files change"
+        },
+        "kvToPyClass.debounceDelay": {
+          "type": "number",
+          "default": 500,
+          "description": "Delay in milliseconds before generating code after changes"
+        },
+        "kvToPyClass.previewOnSide": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open preview panel to the side instead of in current column"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2",
+    "@vscode/test-electron": "^2.3.8"
+  },
+  "dependencies": {}
+}

@@ -16,5 +16,10 @@ dependencies = [
 [tool.setuptools.packages.find]
 include = ["mkdocs_plugin*"]
 
+[tool.uv.workspace]
+members = [
+    "KvLangTester",
+]
+
 [project.entry-points."mkdocs.plugins"]
 pyswiftkit_demo = "mkdocs_plugin:PySwiftKitPlugin"
