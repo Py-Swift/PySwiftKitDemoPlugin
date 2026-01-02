@@ -93,7 +93,17 @@ export class KvWidgetsProvider implements vscode.TreeDataProvider<KvTreeItem>, v
     // Handle dragging items
     async handleDrag(source: KvTreeItem[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
         if (source[0]?.snippet) {
-            dataTransfer.set('text/plain', new vscode.DataTransferItem(source[0].snippet));
+            // Set plain text for editor drops
+            dataTransfer.set('text/plain', new vscode.DataTransferItem(source[0].label || ''));
+            
+            // Set JSON data for VNC preview drops
+            const widgetData = {
+                name: source[0].label,
+                category: source[0].category,
+                snippet: source[0].snippet,
+                type: 'kivy-widget'
+            };
+            dataTransfer.set('application/json', new vscode.DataTransferItem(JSON.stringify(widgetData)));
         }
     }
 
@@ -118,7 +128,8 @@ export class KvWidgetsProvider implements vscode.TreeDataProvider<KvTreeItem>, v
                         undefined,
                         vscode.TreeItemCollapsibleState.None,
                         'widget',
-                        widget.snippet
+                        widget.snippet,
+                        widget.category
                     ));
             }
             return [];
@@ -143,7 +154,8 @@ export class KvTreeItem extends vscode.TreeItem {
         public readonly resourceUri: vscode.Uri | undefined,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly contextValue: string,
-        public readonly snippet?: string
+        public readonly snippet?: string,
+        public readonly category?: string
     ) {
         super(label, collapsibleState);
         

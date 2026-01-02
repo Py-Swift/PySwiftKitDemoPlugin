@@ -1,0 +1,47 @@
+FROM python:3.11-slim
+
+# Install system dependencies for Kivy and VNC streaming
+RUN apt-get update && apt-get install -y \
+    # X11 and display
+    xvfb \
+    x11vnc \
+    # noVNC for browser-based VNC client
+    novnc \
+    websockify \
+    # Kivy dependencies
+    python3-dev \
+    libgl1 \
+    libgles2 \
+    libgstreamer1.0-0 \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    libmtdev1 \
+    libsdl2-2.0-0 \
+    libsdl2-image-2.0-0 \
+    libsdl2-mixer-2.0-0 \
+    libsdl2-ttf-2.0-0 \
+    # Utils
+    xclip \
+    xsel \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+RUN pip install --no-cache-dir kivy pillow
+
+# Set up working directory
+WORKDIR /work
+
+# Copy startup script
+COPY start-vnc-multi.sh /usr/local/bin/start-vnc-multi.sh
+RUN chmod +x /usr/local/bin/start-vnc-multi.sh
+
+# Environment variables
+ENV NUM_INSTANCES=2
+
+# Expose VNC and WebSocket ports for 2 instances
+# Instance 1: VNC 5900, WebSocket 6080
+# Instance 2: VNC 5901, WebSocket 6081
+EXPOSE 5900 5901 6080 6081
+
+CMD ["/usr/local/bin/start-vnc-multi.sh"]

@@ -1,0 +1,19 @@
+services:
+  kivy-vnc-multi:
+    build:
+      context: .
+      dockerfile: Dockerfile.vnc-multi
+    container_name: kivy-vnc-multi
+    ports:
+      # Instance 1
+      - "5900:5900"  # VNC port
+      - "6080:6080"  # noVNC WebSocket port
+      # Instance 2
+      - "5901:5901"  # VNC port
+      - "6081:6081"  # noVNC WebSocket port
+    volumes:
+      - ./kv_projs:/work
+    environment:
+      - NUM_INSTANCES=2  # Number of VNC instances
+    stdin_open: true
+    tty: true

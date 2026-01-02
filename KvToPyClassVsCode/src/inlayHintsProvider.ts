@@ -9,16 +9,16 @@ export class KvInlayHintsProvider implements vscode.InlayHintsProvider {
         range: vscode.Range,
         token: vscode.CancellationToken
     ): Promise<vscode.InlayHint[]> {
-        console.log('[InlayHints] provideInlayHints called');
+        //console.log('[InlayHints] provideInlayHints called');
         const hints: vscode.InlayHint[] = [];
         const symbols = await this.wasmBridge.extractSymbols(document.getText());
-        console.log('[InlayHints] Got symbols:', symbols.length);
-        console.log('[InlayHints] First symbol:', JSON.stringify(symbols[0], null, 2));
+        //console.log('[InlayHints] Got symbols:', symbols.length);
+        //console.log('[InlayHints] First symbol:', JSON.stringify(symbols[0], null, 2));
         
         // Process symbols recursively
         this.processSymbols(symbols, hints, document);
         
-        console.log('[InlayHints] Generated hints:', hints.length);
+        //console.log('[InlayHints] Generated hints:', hints.length);
         return hints;
     }
 
@@ -34,7 +34,7 @@ export class KvInlayHintsProvider implements vscode.InlayHintsProvider {
                     // Only add hints for properties with type info (kind 6 = Property)
                     if (child.kind === 6 && child.detail && !child.detail.includes('handler') && !child.detail.includes('identifier') && !child.detail.includes('widget') && !child.detail.includes('canvas')) {
                         const lineNumber = child.range.startLineNumber - 1;
-                        console.log(`[InlayHints] Processing property ${child.name} at line ${lineNumber}, type: ${child.detail}`);
+                        //console.log(`[InlayHints] Processing property ${child.name} at line ${lineNumber}, type: ${child.detail}`);
                         
                         if (lineNumber >= 0 && lineNumber < document.lineCount) {
                             const line = document.lineAt(lineNumber);
@@ -58,7 +58,7 @@ export class KvInlayHintsProvider implements vscode.InlayHintsProvider {
                                 hint.paddingLeft = true;
                                 hint.paddingRight = false;
                                 
-                                console.log(`[InlayHints] Added hint for ${child.name}: ${child.detail} at position ${lineNumber}:${position.character}`);
+                                //console.log(`[InlayHints] Added hint for ${child.name}: ${child.detail} at position ${lineNumber}:${position.character}`);
                                 hints.push(hint);
                             }
                         }

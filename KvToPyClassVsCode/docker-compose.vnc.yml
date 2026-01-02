@@ -1,0 +1,22 @@
+services:
+  kivy-vnc:
+    build:
+      context: .
+      dockerfile: Dockerfile.vnc
+    container_name: kivy-vnc-preview
+    ports:
+      - "5900:5900"  # VNC port
+      - "6080:6080"  # noVNC WebSocket port
+    volumes:
+      - ./kv_projs:/work
+    environment:
+      - DISPLAY=:99
+      - SDL_VIDEODRIVER=x11
+    # Optional: Resource limits for better performance isolation
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2.0'
+    #       memory: 1G
+    stdin_open: true
+    tty: true

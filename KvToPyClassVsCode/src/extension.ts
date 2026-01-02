@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { WasmBridge } from './wasmBridge';
 import { PairedFileManager } from './pairedFileManager';
 import { PreviewPanel } from './previewPanel';
+import { VncPreviewPanel } from './vncPreviewPanel';
 import { DiagnosticsProvider } from './diagnosticsProvider';
 import { KvSymbolProvider } from './symbolProvider';
 import { KvCompletionProvider } from './completionProvider';
@@ -11,6 +12,7 @@ import { KvHoverProvider } from './hoverProvider';
 import { KvWidgetHoverProvider } from './widgetHoverProvider';
 import { KivyRenderService } from './kivyRenderService';
 import { KvFilesProvider, KvWidgetsProvider } from './kvExplorerView';
+import { KvOutlineProvider } from './kvOutlineProvider';
 
 let wasmBridge: WasmBridge;
 let pairedFileManager: PairedFileManager;
@@ -152,9 +154,56 @@ function registerCommands(context: vscode.ExtensionContext) {
         }
     );
     
+    // Command: Show VNC Live Preview - Instance Selector
+    const vncPreviewCommand = vscode.commands.registerCommand(
+        'kvToPyClass.showVncPreview',
+        async () => {
+            try {
+                await VncPreviewPanel.showInstanceSelector(context);
+            } catch (error) {
+                vscode.window.showErrorMessage(
+                    `Failed to open VNC preview: ${error instanceof Error ? error.message : String(error)}`
+                );
+            }
+        }
+    );
+    
+    // Command: Show VNC Live Preview - Instance 1
+    const vncPreview1Command = vscode.commands.registerCommand(
+        'kvToPyClass.showVncPreview1',
+        async () => {
+            try {
+                const panel = VncPreviewPanel.getInstance(context, 1);
+                await panel.show();
+            } catch (error) {
+                vscode.window.showErrorMessage(
+                    `Failed to open VNC preview (Instance 1): ${error instanceof Error ? error.message : String(error)}`
+                );
+            }
+        }
+    );
+    
+    // Command: Show VNC Live Preview - Instance 2
+    const vncPreview2Command = vscode.commands.registerCommand(
+        'kvToPyClass.showVncPreview2',
+        async () => {
+            try {
+                const panel = VncPreviewPanel.getInstance(context, 2);
+                await panel.show();
+            } catch (error) {
+                vscode.window.showErrorMessage(
+                    `Failed to open VNC preview (Instance 2): ${error instanceof Error ? error.message : String(error)}`
+                );
+            }
+        }
+    );
+    
     context.subscriptions.push(generateCommand);
     context.subscriptions.push(previewCommand);
     context.subscriptions.push(toggleAutoGenerateCommand);
+    context.subscriptions.push(vncPreviewCommand);
+    context.subscriptions.push(vncPreview1Command);
+    context.subscriptions.push(vncPreview2Command);
 }
 
 /**
@@ -261,6 +310,48 @@ function registerSidebarViews(context: vscode.ExtensionContext) {
     });
     
     context.subscriptions.push(kvFilesView, kvWidgetsView, refreshCommand, insertWidgetCommand);
+    
+    // Register KV Outline view with drop support
+    const kvOutlineProvider = new KvOutlineProvider(wasmBridge);
+    const kvOutlineView = vscode.window.createTreeView('kvOutlineView', {
+        treeDataProvider: kvOutlineProvider,
+        dragAndDropController: kvOutlineProvider
+    });
+    
+    // Register goto location command for outline
+    const gotoLocationCommand = vscode.commands.registerCommand('kvOutline.gotoLocation', (range: vscode.Range) => {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            editor.selection = new vscode.Selection(range.start, range.start);
+            editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+        }
+    });
+    
+    // Update outline when active editor changes
+    const editorChangeListener = vscode.window.onDidChangeActiveTextEditor(editor => {
+        if (editor && editor.document.languageId === 'kv') {
+            console.log('[KvOutline] Active editor changed to KV file');
+            kvOutlineProvider.refresh(editor.document);
+        }
+    });
+    
+    // Update outline when document changes
+    const docChangeListener = vscode.workspace.onDidChangeTextDocument(event => {
+        const editor = vscode.window.activeTextEditor;
+        if (editor && event.document === editor.document && editor.document.languageId === 'kv') {
+            // Debounce updates
+            setTimeout(() => kvOutlineProvider.refresh(event.document), 500);
+        }
+    });
+    
+    // Initial outline refresh if a KV file is open
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor && activeEditor.document.languageId === 'kv') {
+        console.log('[KvOutline] Performing initial refresh for open KV file');
+        kvOutlineProvider.refresh(activeEditor.document);
+    }
+    
+    context.subscriptions.push(kvOutlineView, gotoLocationCommand, editorChangeListener, docChangeListener);
     
     // Register document drop handler for drag and drop from tree view to editor
     const dropProvider = vscode.languages.registerDocumentDropEditProvider(

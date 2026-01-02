@@ -19,6 +19,7 @@ include = ["mkdocs_plugin*"]
 [tool.uv.workspace]
 members = [
     "KvLangTester",
+    "KvToPyClassVsCode/kv_projs/KvTestsOne",
 ]
 
 [project.entry-points."mkdocs.plugins"]

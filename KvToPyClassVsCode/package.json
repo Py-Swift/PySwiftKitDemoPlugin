@@ -41,6 +41,11 @@
           "id": "kvWidgetsView",
           "name": "KV Widgets",
           "type": "tree"
+        },
+        {
+          "id": "kvOutlineView",
+          "name": "KV Outline",
+          "type": "tree"
         }
       ]
     },
@@ -78,12 +83,32 @@
         "icon": "$(open-preview)"
       },
       {
+        "command": "kvToPyClass.showVncPreview",
+        "title": "KV: Show Live Kivy Preview (Select Instance)",
+        "icon": "$(device-camera-video)"
+      },
+      {
+        "command": "kvToPyClass.showVncPreview1",
+        "title": "KV: Show Live Preview - Instance 1",
+        "icon": "$(device-camera-video)"
+      },
+      {
+        "command": "kvToPyClass.showVncPreview2",
+        "title": "KV: Show Live Preview - Instance 2",
+        "icon": "$(device-camera-video)"
+      },
+      {
         "command": "kvToPyClass.toggleAutoGenerate",
         "title": "KV: Toggle Auto-Generate"
       }
     ],
     "menus": {
       "editor/title": [
+        {
+          "command": "kvToPyClass.showVncPreview",
+          "when": "resourceLangId == kv",
+          "group": "navigation"
+        },
         {
           "command": "kvToPyClass.showPreview",
           "when": "resourceLangId == kv",
@@ -103,6 +128,15 @@
         {
           "command": "kvToPyClass.showPreview",
           "when": "resourceLangId == kv"
+        },
+        {
+          "command": "kvToPyClass.showVncPreview"
+        },
+        {
+          "command": "kvToPyClass.showVncPreview1"
+        },
+        {
+          "command": "kvToPyClass.showVncPreview2"
         }
       ]
     },
